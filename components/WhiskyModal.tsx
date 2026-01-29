@@ -1,170 +1,306 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
+import React from "react"
 
-type Whisky = {
-  id?: number;
-  name?: string;
-  price?: string;
-  url?: string;
-  image_url?: string;
-  distillery?: string;
-  region?: string;
-  volume?: string;
-  abv?: string;
-  description?: string;
-  source?: string;
-  month?: string;
-};
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { Whisky } from '@/lib/mockData';
 
-interface ModalProps {
+interface WhiskyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
-  whisky?: Partial<Whisky> | null;
+  onSave: (whisky: any) => Promise<void>;
+  whisky?: Whisky | null;
 }
 
-export default function WhiskyModal({ isOpen, onClose, onSave, whisky }: ModalProps) {
-  const [formData, setFormData] = useState<Partial<Whisky>>({});
+const emptyForm = {
+  name: '',
+  price: '',
+  url: '',
+  image_url: '',
+  volume: '',
+  abv: '',
+  description: '',
+  distillery: '',
+  region: '',
+  age: '',
+  cask_type: '',
+  tasting_notes: '',
+  source: 'distillery',
+  month: 'January',
+};
 
-  useEffect(() => {
-    if (whisky) {
-      setFormData(whisky);
-    } else {
-      setFormData({ source: 'manual', month: new Date().toLocaleString('default', { month: 'long' }) });
-    }
-  }, [whisky, isOpen]);
+export default function WhiskyModal({ isOpen, onClose, onSave, whisky }: WhiskyModalProps) {
+  const [formData, setFormData] = useState<any>(whisky || emptyForm);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const method = formData.id ? 'PUT' : 'POST';
+    setIsLoading(true);
+
     try {
-      const res = await fetch('/api/whiskies', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const json = await res.json();
-      if (json.success) {
-        onSave();
-        onClose();
+      const payload = whisky
+        ? {
+            id: whisky.id,
+            ...formData,
+          }
+        : formData;
+
+      await onSave(payload);
+
+      if (!whisky) {
+        toast.success('Whisky added successfully!');
       } else {
-        alert('Error: ' + json.error);
+        toast.success('Whisky updated successfully!');
       }
-    } catch (err) {
-      alert('Failed to save');
+
+      setFormData(emptyForm);
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save whisky');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (!isOpen) return null;
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setFormData(whisky || emptyForm);
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
-          <h2 className="text-xl font-bold dark:text-white">
-            {formData.id ? 'Edit Whisky' : 'Add New Whisky'}
-          </h2>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
-            <FiX className="text-xl" />
-          </button>
-        </div>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{whisky ? 'Edit Whisky' : 'Add New Whisky'}</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[70vh]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-zinc-500 mb-1">Whisky Name</label>
-              <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Basic Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g., Glenmorangie The Original"
                 required
-                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                value={formData.name || ''}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-zinc-500 mb-1">Price</label>
-              <input
-                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                value={formData.price || ''}
-                onChange={e => setFormData({ ...formData, price: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-zinc-500 mb-1">Distillery</label>
-              <input
-                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                value={formData.distillery || ''}
-                onChange={e => setFormData({ ...formData, distillery: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-zinc-500 mb-1">Region</label>
-              <input
-                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                value={formData.region || ''}
-                onChange={e => setFormData({ ...formData, region: e.target.value })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm font-medium text-zinc-500 mb-1">ABV (%)</label>
-                <input
-                  className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                  value={formData.abv || ''}
-                  onChange={e => setFormData({ ...formData, abv: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-500 mb-1">Volume</label>
-                <input
-                  className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                  value={formData.volume || ''}
-                  onChange={e => setFormData({ ...formData, volume: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-zinc-500 mb-1">URL</label>
-              <input
-                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all"
-                value={formData.url || ''}
-                onChange={e => setFormData({ ...formData, url: e.target.value })}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-zinc-500 mb-1">Description</label>
-              <textarea
-                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all h-24"
-                value={formData.description || ''}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
+            <div className="space-y-2">
+              <Label htmlFor="price">Price *</Label>
+              <Input
+                id="price"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                placeholder="e.g., $45.99"
+                required
               />
             </div>
           </div>
 
-          <div className="mt-8 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-            >
+          {/* Distillery and Region */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="distillery">Distillery *</Label>
+              <Input
+                id="distillery"
+                name="distillery"
+                value={formData.distillery}
+                onChange={handleChange}
+                placeholder="e.g., Glenmorangie"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="region">Region *</Label>
+              <Input
+                id="region"
+                name="region"
+                value={formData.region}
+                onChange={handleChange}
+                placeholder="e.g., Highlands"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Volume and ABV */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="volume">Volume</Label>
+              <Input
+                id="volume"
+                name="volume"
+                value={formData.volume}
+                onChange={handleChange}
+                placeholder="e.g., 700ml"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="abv">ABV</Label>
+              <Input
+                id="abv"
+                name="abv"
+                value={formData.abv}
+                onChange={handleChange}
+                placeholder="e.g., 40%"
+              />
+            </div>
+          </div>
+
+          {/* Age and Cask Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                placeholder="e.g., 10 years"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cask_type">Cask Type</Label>
+              <Input
+                id="cask_type"
+                name="cask_type"
+                value={formData.cask_type}
+                onChange={handleChange}
+                placeholder="e.g., ex-Bourbon"
+              />
+            </div>
+          </div>
+
+          {/* URL and Image */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="url">URL</Label>
+              <Input
+                id="url"
+                name="url"
+                type="url"
+                value={formData.url}
+                onChange={handleChange}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image_url">Image URL</Label>
+              <Input
+                id="image_url"
+                name="image_url"
+                type="url"
+                value={formData.image_url}
+                onChange={handleChange}
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Enter a detailed description of the whisky"
+              rows={3}
+            />
+          </div>
+
+          {/* Tasting Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="tasting_notes">Tasting Notes</Label>
+            <Textarea
+              id="tasting_notes"
+              name="tasting_notes"
+              value={formData.tasting_notes}
+              onChange={handleChange}
+              placeholder="e.g., Citrus, floral, vanilla"
+              rows={2}
+            />
+          </div>
+
+          {/* Source and Month */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="source">Source</Label>
+              <select
+                id="source"
+                name="source"
+                value={formData.source}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+              >
+                <option value="distillery">Distillery</option>
+                <option value="distributor">Distributor</option>
+                <option value="retailer">Retailer</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="month">Month</Label>
+              <select
+                id="month"
+                name="month"
+                value={formData.month}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+              >
+                {[
+                  'January',
+                  'February',
+                  'March',
+                  'April',
+                  'May',
+                  'June',
+                  'July',
+                  'August',
+                  'September',
+                  'October',
+                  'November',
+                  'December',
+                ].map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-amber-500 text-zinc-900 font-semibold rounded-xl hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
-            >
-              Save Changes
-            </button>
-          </div>
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Saving...' : 'Save Whisky'}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

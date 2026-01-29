@@ -8,12 +8,25 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  charset: 'utf8mb4',
 });
 
-export async function query(sql: string, params?: any[]) {
-  const [rows] = await pool.execute(sql, params);
-  return rows;
+export async function query(sql: string, values?: any[]) {
+  try {
+    const connection = await pool.getConnection();
+    try {
+      const [results] = await connection.execute(sql, values);
+      return results;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('[v0] Database query error:', error);
+    throw error;
+  }
+}
+
+export async function getConnection() {
+  return await pool.getConnection();
 }
 
 export default pool;

@@ -1,110 +1,350 @@
-import { NextResponse } from 'next/server';
-import pool, { query } from '../../../lib/db';
+import { NextRequest, NextResponse } from 'next/server';
+import { query } from '@/lib/db';
+import {
+  Whisky,
+  searchWhiskies,
+  addWhiskyToStore,
+  updateWhiskyInStore,
+  deleteWhiskyFromStore,
+  whiskiesStore,
+} from '@/lib/mockData';
 
-export async function GET(req: Request) {
+let useMockData = false;
+let mockDataError: string | null = null;
+
+async function checkDatabaseConnection(): Promise<boolean> {
   try {
-    const url = new URL(req.url);
-    const q = url.searchParams.get('q') || '';
-    const page = parseInt(url.searchParams.get('page') || '1', 10);
-    const limit = parseInt(url.searchParams.get('limit') || '25', 10);
-    const offset = (Math.max(page, 1) - 1) * limit;
+    await query('SELECT 1');
+    useMockData = false;
+    mockDataError = null;
+    return true;
+  } catch (error: any) {
+    console.log('[v0] Database unavailable, switching to mock data');
+    useMockData = true;
+    mockDataError = error?.message || 'Database connection failed';
+    return false;
+  }
+}
 
-    let rows;
-    let total;
-    if (q) {
-      const like = `%${q}%`;
-      const [totalRow] = await query(
-        `SELECT COUNT(*) as count FROM whiskies WHERE name LIKE ? OR distillery LIKE ? OR region LIKE ? OR description LIKE ?`,
-        [like, like, like, like]
-      ) as any;
-      total = totalRow.count;
-      rows = await query(
-        `SELECT * FROM whiskies WHERE name LIKE ? OR distillery LIKE ? OR region LIKE ? OR description LIKE ? ORDER BY scraped_at DESC LIMIT ? OFFSET ?`,
-        [like, like, like, like, limit, offset]
-      );
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const isDbAvailable = await checkDatabaseConnection();
+
+    let data: Whisky[] = [];
+    let total = 0;
+
+    if (!isDbAvailable) {
+      // Use mock data
+      if (search) {
+        data = searchWhiskies(search);
+      } else {
+        data = [...whiskiesStore];
+      }
+      total = data.length;
+      data = data.slice(offset, offset + limit);
     } else {
-      const [totalRow] = await query(`SELECT COUNT(*) as count FROM whiskies`) as any;
-      total = totalRow.count;
-      rows = await query(`SELECT * FROM whiskies ORDER BY scraped_at DESC LIMIT ? OFFSET ?`, [limit, offset]);
-    }
+      // Query database
+      try {
+        let sql = 'SELECT * FROM whiskies';
+        const params: any[] = [];
 
-    return NextResponse.json({ success: true, data: rows, total, page, limit });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('GET /api/whiskies error', err);
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
-  }
-}
+        if (search) {
+          sql += ` WHERE name LIKE ? OR distillery LIKE ? OR region LIKE ? OR description LIKE ?`;
+          const searchPattern = `%${search}%`;
+          params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+        }
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const sql = `INSERT INTO whiskies (name, price, url, image_url, image_data, volume, abv, description, distillery, region, age, cask_type, tasting_notes, source, month) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-    const vals = [
-      body.name || null,
-      body.price || null,
-      body.url || null,
-      body.image_url || null,
-      body.image_data || null,
-      body.volume || null,
-      body.abv || null,
-      body.description || null,
-      body.distillery || null,
-      body.region || null,
-      body.age || null,
-      body.cask_type || null,
-      body.tasting_notes || null,
-      body.source || null,
-      body.month || null,
-    ];
+        // Get total count
+        let countSql = 'SELECT COUNT(*) as count FROM whiskies';
+        if (search) {
+          countSql += ` WHERE name LIKE ? OR distillery LIKE ? OR region LIKE ? OR description LIKE ?`;
+        }
+        const countResult: any = await query(countSql, params);
+        total = countResult[0]?.count || 0;
 
-    const [result] = await pool.execute(sql, vals as any);
+        // Get paginated data
+        sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+        params.push(limit, offset);
+        data = (await query(sql, params)) as Whisky[];
+      } catch (dbError: any) {
+        console.error('[v0] Database query failed:', dbError.message);
+        useMockData = true;
+        mockDataError = 'Failed to fetch from database';
 
-    return NextResponse.json({ success: true, result });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('POST /api/whiskies error', err);
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
-  }
-}
-
-export async function PUT(req: Request) {
-  try {
-    const body = await req.json();
-    if (!body.id) return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
-
-    const fields = [] as string[];
-    const vals = [] as any[];
-    const allowed = ['name','price','url','image_url','image_data','volume','abv','description','distillery','region','age','cask_type','tasting_notes','source','month'];
-    for (const k of allowed) {
-      if (k in body) {
-        fields.push(`${k} = ?`);
-        vals.push(body[k]);
+        // Fall back to mock data
+        if (search) {
+          data = searchWhiskies(search);
+        } else {
+          data = [...whiskiesStore];
+        }
+        total = data.length;
+        data = data.slice(offset, offset + limit);
       }
     }
-    if (fields.length === 0) return NextResponse.json({ success: false, error: 'No fields to update' }, { status: 400 });
 
-    vals.push(body.id);
-    const sql = `UPDATE whiskies SET ${fields.join(', ')} WHERE id = ?`;
-    const [result] = await pool.execute(sql, vals as any);
-    return NextResponse.json({ success: true, result });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('PUT /api/whiskies error', err);
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      error: mockDataError,
+      usingMockData: useMockData,
+    });
+  } catch (error: any) {
+    console.error('[v0] GET /api/whiskies error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to fetch whiskies',
+      },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const url = new URL(req.url);
-    const id = url.searchParams.get('id');
-    if (!id) return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
-    const [result] = await pool.execute(`DELETE FROM whiskies WHERE id = ?`, [id]);
-    return NextResponse.json({ success: true, result });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('DELETE /api/whiskies error', err);
-    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+    const body = await request.json();
+
+    const isDbAvailable = await checkDatabaseConnection();
+
+    let newWhisky: Whisky;
+
+    if (!isDbAvailable) {
+      // Add to mock data
+      newWhisky = addWhiskyToStore(body);
+    } else {
+      try {
+        const {
+          name,
+          price,
+          url,
+          image_url,
+          image_data,
+          volume,
+          abv,
+          description,
+          distillery,
+          region,
+          age,
+          cask_type,
+          tasting_notes,
+          source,
+          month,
+        } = body;
+
+        const sql = `
+          INSERT INTO whiskies (
+            name, price, url, image_url, image_data, volume, abv, 
+            description, distillery, region, age, cask_type, 
+            tasting_notes, source, month
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        const result: any = await query(sql, [
+          name,
+          price,
+          url,
+          image_url,
+          image_data || null,
+          volume,
+          abv,
+          description,
+          distillery,
+          region,
+          age,
+          cask_type,
+          tasting_notes,
+          source,
+          month,
+        ]);
+
+        newWhisky = {
+          id: result.insertId,
+          name,
+          price,
+          url,
+          image_url,
+          image_data: null,
+          volume,
+          abv,
+          description,
+          distillery,
+          region,
+          age,
+          cask_type,
+          tasting_notes,
+          source,
+          month,
+          scraped_at: new Date().toISOString(),
+        };
+      } catch (dbError: any) {
+        console.error('[v0] Database insert failed:', dbError.message);
+        useMockData = true;
+        mockDataError = 'Failed to save to database';
+        newWhisky = addWhiskyToStore(body);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: newWhisky,
+      error: mockDataError,
+      usingMockData: useMockData,
+    });
+  } catch (error: any) {
+    console.error('[v0] POST /api/whiskies error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to create whisky',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'ID is required',
+        },
+        { status: 400 }
+      );
+    }
+
+    const isDbAvailable = await checkDatabaseConnection();
+
+    let updatedWhisky: Whisky | null = null;
+
+    if (!isDbAvailable) {
+      // Update mock data
+      updatedWhisky = updateWhiskyInStore(id, updates);
+    } else {
+      try {
+        const setClauses: string[] = [];
+        const values: any[] = [];
+
+        for (const [key, value] of Object.entries(updates)) {
+          setClauses.push(`${key} = ?`);
+          values.push(value);
+        }
+
+        values.push(id);
+
+        const sql = `UPDATE whiskies SET ${setClauses.join(', ')}, scraped_at = NOW() WHERE id = ?`;
+        await query(sql, values);
+
+        // Fetch updated record
+        const result: any = await query('SELECT * FROM whiskies WHERE id = ?', [id]);
+        updatedWhisky = result[0] || null;
+      } catch (dbError: any) {
+        console.error('[v0] Database update failed:', dbError.message);
+        useMockData = true;
+        mockDataError = 'Failed to update in database';
+        updatedWhisky = updateWhiskyInStore(id, updates);
+      }
+    }
+
+    if (!updatedWhisky) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Whisky not found',
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: updatedWhisky,
+      error: mockDataError,
+      usingMockData: useMockData,
+    });
+  } catch (error: any) {
+    console.error('[v0] PUT /api/whiskies error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to update whisky',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const id = parseInt(searchParams.get('id') || '0', 10);
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'ID is required',
+        },
+        { status: 400 }
+      );
+    }
+
+    const isDbAvailable = await checkDatabaseConnection();
+
+    let deleted = false;
+
+    if (!isDbAvailable) {
+      // Delete from mock data
+      deleted = deleteWhiskyFromStore(id);
+    } else {
+      try {
+        await query('DELETE FROM whiskies WHERE id = ?', [id]);
+        deleted = true;
+      } catch (dbError: any) {
+        console.error('[v0] Database delete failed:', dbError.message);
+        useMockData = true;
+        mockDataError = 'Failed to delete from database';
+        deleted = deleteWhiskyFromStore(id);
+      }
+    }
+
+    if (!deleted) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Whisky not found',
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      error: mockDataError,
+      usingMockData: useMockData,
+    });
+  } catch (error: any) {
+    console.error('[v0] DELETE /api/whiskies error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || 'Failed to delete whisky',
+      },
+      { status: 500 }
+    );
   }
 }
