@@ -14,7 +14,7 @@ export async function query(sql: string, values?: any[]) {
   try {
     const connection = await pool.getConnection();
     try {
-      const [results] = await connection.execute(sql, values);
+      const [results] = await connection.execute(sql, values || []);
       return results;
     } finally {
       connection.release();

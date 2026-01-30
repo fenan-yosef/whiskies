@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 const config = {
   host: process.env.DB_HOST || '127.0.0.1',
@@ -15,17 +16,17 @@ async function initializeDatabase() {
 
     // Create database
     console.log('[v0] Creating database if it does not exist...');
-    await connection.execute(
+    await connection.query(
       'CREATE DATABASE IF NOT EXISTS `whisky_scraper` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
     );
     console.log('[v0] ✓ Database created or already exists');
 
     // Use the database
-    await connection.execute('USE `whisky_scraper`');
+    await connection.query('USE `whisky_scraper`');
 
     // Create table
     console.log('[v0] Creating whiskies table...');
-    await connection.execute(`
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS whiskies (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255),
