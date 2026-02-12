@@ -8,16 +8,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FiPlus, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import Sidebar from '@/components/Sidebar';
 import SearchBar from '@/components/SearchBar';
-import WhiskyTable from '@/components/WhiskyTable';
-import WhiskyModal from '@/components/WhiskyModal';
+import WineTable from '@/components/WineTable';
+import WineModal from '@/components/WineModal';
 import PaginationComponent from '@/components/PaginationComponent';
-import { Whisky } from '@/lib/mockData';
+import { Wine } from '@/lib/mockData';
 import { toast } from 'sonner';
 import debounce from 'lodash.debounce';
 
 interface ApiResponse {
   success: boolean;
-  data: Whisky[];
+  data: Wine[];
   total: number;
   page: number;
   totalPages: number;
@@ -31,10 +31,10 @@ export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedWhisky, setSelectedWhisky] = useState<Whisky | null>(null);
+  const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
 
   const queryParams = new URLSearchParams();
-  if (search) queryParams.append('search', search);
+  if (search) queryParams.append('q', search);
   queryParams.append('page', page.toString());
 
   const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
@@ -61,21 +61,21 @@ export default function Dashboard() {
   };
 
   const handleAddClick = () => {
-    setSelectedWhisky(null);
+    setSelectedWine(null);
     setIsModalOpen(true);
   };
 
-  const handleEditClick = (whisky: Whisky) => {
-    setSelectedWhisky(whisky);
+  const handleEditClick = (wine: Wine) => {
+    setSelectedWine(wine);
     setIsModalOpen(true);
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    setSelectedWhisky(null);
+    setSelectedWine(null);
   };
 
-  const handleSaveWhisky = async (formData: any) => {
+  const handleSaveWine = async (formData: any) => {
     try {
       const isUpdate = 'id' in formData;
       const method = isUpdate ? 'PUT' : 'POST';
@@ -91,17 +91,17 @@ export default function Dashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save whisky');
+        throw new Error(errorData.error || 'Failed to save wine');
       }
 
       await mutate();
       handleModalClose();
     } catch (error: any) {
-      throw new Error(error.message || 'Failed to save whisky');
+      throw new Error(error.message || 'Failed to save wine');
     }
   };
 
-  const handleDeleteWhisky = async (id: number) => {
+  const handleDeleteWine = async (id: number) => {
     try {
       const response = await fetch(`/api/whiskies?id=${id}`, {
         method: 'DELETE',
@@ -109,12 +109,12 @@ export default function Dashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete whisky');
+        throw new Error(errorData.error || 'Failed to delete wine');
       }
 
       await mutate();
     } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete whisky');
+      throw new Error(error.message || 'Failed to delete wine');
     }
   };
 
@@ -138,9 +138,9 @@ export default function Dashboard() {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Whiskies Inventory</h1>
+                  <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Wines Inventory</h1>
                   <p className="text-zinc-600 dark:text-zinc-400 mt-1">
-                    Manage and explore your whisky collection
+                    Manage and explore your wine collection
                   </p>
                 </div>
                 <Button
@@ -148,7 +148,7 @@ export default function Dashboard() {
                   className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2"
                 >
                   <FiPlus className="w-5 h-5" />
-                  Add Whisky
+                  Add Wine
                 </Button>
               </div>
             </div>
@@ -207,11 +207,11 @@ export default function Dashboard() {
 
             {/* Table */}
             <div className="mb-8">
-              <WhiskyTable
-                whiskies={data?.data || []}
+              <WineTable
+                wines={data?.data || []}
                 isLoading={isLoading}
                 onEdit={handleEditClick}
-                onDelete={handleDeleteWhisky}
+                onDelete={handleDeleteWine}
               />
             </div>
 
@@ -231,7 +231,7 @@ export default function Dashboard() {
       </main>
 
       {/* Modal */}
-      <WhiskyModal isOpen={isModalOpen} onClose={handleModalClose} onSave={handleSaveWhisky} whisky={selectedWhisky} />
+      <WineModal isOpen={isModalOpen} onClose={handleModalClose} onSave={handleSaveWine} wine={selectedWine} />
     </div>
   );
 }

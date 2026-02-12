@@ -13,7 +13,7 @@ export default function Sidebar() {
             W
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-white">Whisky Admin</h1>
+            <h1 className="text-lg font-semibold text-white">Wine Admin</h1>
             <p className="text-xs text-zinc-400">Inventory Manager</p>
           </div>
         </div>

@@ -1,162 +1,113 @@
-export interface Whisky {
+export interface Wine {
   id: number;
   name: string;
-  price: string;
   url: string;
+  price: number | null;
   image_url: string;
-  image_data: string | null;
-  volume: string;
-  abv: string;
   description: string;
-  distillery: string;
-  region: string;
-  age: string;
-  cask_type: string;
-  tasting_notes: string;
+  brand: string;
   source: string;
-  month: string;
   scraped_at: string;
 }
 
-export const mockWhiskies: Whisky[] = [
+export const mockWines: Wine[] = [
   {
     id: 1,
-    name: 'Glenmorangie The Original',
-    price: '$45.99',
-    url: 'https://example.com/glenmorangie-original',
-    image_url: 'https://via.placeholder.com/300x400?text=Glenmorangie',
-    image_data: null,
-    volume: '700ml',
-    abv: '40%',
-    description: 'A light, delicate and elegant single malt Scotch whisky with a fresh citrus character.',
-    distillery: 'Glenmorangie',
-    region: 'Highlands',
-    age: '10 years',
-    cask_type: 'ex-Bourbon',
-    tasting_notes: 'Citrus, floral, vanilla',
-    source: 'distillery',
-    month: 'January',
+    name: 'Chateau Margaux 2015',
+    price: 450.00,
+    url: 'https://example.com/chateau-margaux-2015',
+    image_url: 'https://via.placeholder.com/300x400?text=Margaux',
+    description: 'A prestigious Bordeaux wine with exceptional aging potential.',
+    brand: 'Chateau Margaux',
+    source: 'wine.com',
     scraped_at: new Date().toISOString(),
   },
   {
     id: 2,
-    name: 'Macallan 12 Year Old',
-    price: '$89.99',
-    url: 'https://example.com/macallan-12',
-    image_url: 'https://via.placeholder.com/300x400?text=Macallan',
-    image_data: null,
-    volume: '700ml',
-    abv: '43%',
-    description: 'Rich and golden with a complex character reflecting years of maturation in sherry oak.',
-    distillery: 'Macallan',
-    region: 'Speyside',
-    age: '12 years',
-    cask_type: 'Sherry Oak',
-    tasting_notes: 'Sherry, spice, oak',
-    source: 'distributor',
-    month: 'January',
+    name: 'Opus One 2018',
+    price: 350.00,
+    url: 'https://example.com/opus-one-2018',
+    image_url: 'https://via.placeholder.com/300x400?text=Opus+One',
+    description: 'A blend of Cabernet Sauvignon and Merlot from Napa Valley.',
+    brand: 'Opus One',
+    source: 'wine.com',
     scraped_at: new Date().toISOString(),
   },
   {
     id: 3,
-    name: 'Dalwhinnie Winter\'s Gold',
-    price: '$39.99',
-    url: 'https://example.com/dalwhinnie-winters-gold',
-    image_url: 'https://via.placeholder.com/300x400?text=Dalwhinnie',
-    image_data: null,
-    volume: '700ml',
-    abv: '43%',
-    description: 'A honey-coloured whisky with a rich, smooth and warming character.',
-    distillery: 'Dalwhinnie',
-    region: 'Highlands',
-    age: '15 years',
-    cask_type: 'European oak',
-    tasting_notes: 'Honey, heather, warm spice',
-    source: 'retailer',
-    month: 'January',
+    name: 'Domaine de la Romanée-Conti 2017',
+    price: 1200.00,
+    url: 'https://example.com/romanee-conti-2017',
+    image_url: 'https://via.placeholder.com/300x400?text=Roman%C3%A9e-Conti',
+    description: 'One of the most sought-after Pinot Noir wines from Burgundy.',
+    brand: 'Domaine de la Romanée-Conti',
+    source: 'wine.com',
     scraped_at: new Date().toISOString(),
   },
   {
     id: 4,
-    name: 'Oban 14 Year Old',
-    price: '$64.99',
-    url: 'https://example.com/oban-14',
-    image_url: 'https://via.placeholder.com/300x400?text=Oban',
-    image_data: null,
-    volume: '700ml',
-    abv: '43%',
-    description: 'A gentle, complex and fully rounded malt from the remote west coast of Scotland.',
-    distillery: 'Oban',
-    region: 'West Highlands',
-    age: '14 years',
-    cask_type: 'ex-Bourbon',
-    tasting_notes: 'Sea salt, pepper, smoke',
-    source: 'distillery',
-    month: 'January',
+    name: 'Penfolds Grange 2016',
+    price: 650.00,
+    url: 'https://example.com/penfolds-grange-2016',
+    image_url: 'https://via.placeholder.com/300x400?text=Penfolds+Grange',
+    description: 'Australia\'s most famous wine, a powerful Shiraz blend.',
+    brand: 'Penfolds',
+    source: 'wine.com',
     scraped_at: new Date().toISOString(),
   },
   {
     id: 5,
-    name: 'Laphroaig 10 Year Old',
-    price: '$49.99',
-    url: 'https://example.com/laphroaig-10',
-    image_url: 'https://via.placeholder.com/300x400?text=Laphroaig',
-    image_data: null,
-    volume: '700ml',
-    abv: '40%',
-    description: 'A full-bodied, complex, heavily peated Islay malt with a characterful peppery finish.',
-    distillery: 'Laphroaig',
-    region: 'Islay',
-    age: '10 years',
-    cask_type: 'ex-Bourbon',
-    tasting_notes: 'Peat, smoke, sea salt',
-    source: 'retailer',
-    month: 'January',
+    name: 'Screaming Eagle Cabernet Sauvignon 2015',
+    price: 2500.00,
+    url: 'https://example.com/screaming-eagle-2015',
+    image_url: 'https://via.placeholder.com/300x400?text=Screaming+Eagle',
+    description: 'Ultra-rare Napa Valley Cabernet with legendary status.',
+    brand: 'Screaming Eagle',
+    source: 'wine.com',
     scraped_at: new Date().toISOString(),
   },
 ];
 
 // In-memory storage for mock data mutations
-export let whiskiesStore = [...mockWhiskies];
+export let winesStore = [...mockWines];
 let nextId = 6;
 
 export function resetMockData() {
-  whiskiesStore = [...mockWhiskies];
+  winesStore = [...mockWines];
   nextId = 6;
 }
 
-export function searchWhiskies(query: string): Whisky[] {
+export function searchWines(query: string): Wine[] {
   const lowerQuery = query.toLowerCase();
-  return whiskiesStore.filter((whisky) => {
+  return winesStore.filter((wine) => {
     return (
-      whisky.name.toLowerCase().includes(lowerQuery) ||
-      whisky.distillery.toLowerCase().includes(lowerQuery) ||
-      whisky.region.toLowerCase().includes(lowerQuery) ||
-      whisky.description.toLowerCase().includes(lowerQuery)
+      wine.name.toLowerCase().includes(lowerQuery) ||
+      wine.brand.toLowerCase().includes(lowerQuery) ||
+      wine.description.toLowerCase().includes(lowerQuery)
     );
   });
 }
 
-export function addWhiskyToStore(whisky: Omit<Whisky, 'id' | 'scraped_at'>): Whisky {
-  const newWhisky: Whisky = {
-    ...whisky,
+export function addWineToStore(wine: Omit<Wine, 'id' | 'scraped_at'>): Wine {
+  const newWine: Wine = {
+    ...wine,
     id: nextId++,
     scraped_at: new Date().toISOString(),
   };
-  whiskiesStore.push(newWhisky);
-  return newWhisky;
+  winesStore.push(newWine);
+  return newWine;
 }
 
-export function updateWhiskyInStore(id: number, updates: Partial<Whisky>): Whisky | null {
-  const index = whiskiesStore.findIndex((w) => w.id === id);
+export function updateWineInStore(id: number, updates: Partial<Wine>): Wine | null {
+  const index = winesStore.findIndex((w) => w.id === id);
   if (index === -1) return null;
-  whiskiesStore[index] = { ...whiskiesStore[index], ...updates, id, scraped_at: new Date().toISOString() };
-  return whiskiesStore[index];
+  winesStore[index] = { ...winesStore[index], ...updates, id, scraped_at: new Date().toISOString() };
+  return winesStore[index];
 }
 
-export function deleteWhiskyFromStore(id: number): boolean {
-  const index = whiskiesStore.findIndex((w) => w.id === id);
+export function deleteWineFromStore(id: number): boolean {
+  const index = winesStore.findIndex((w) => w.id === id);
   if (index === -1) return false;
-  whiskiesStore.splice(index, 1);
+  winesStore.splice(index, 1);
   return true;
 }

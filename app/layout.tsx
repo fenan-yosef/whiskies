@@ -9,8 +9,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Whisky Inventory Manager',
-  description: 'Professional whisky inventory management application with search, filtering, and CRUD operations',
+  title: 'Wine Inventory Manager',
+  description: 'Professional wine inventory management application with search, filtering, and CRUD operations',
   generator: 'v0.app',
   icons: {
     icon: [

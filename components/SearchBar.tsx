@@ -31,15 +31,13 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
         type="text"
         value={query}
         onChange={handleChange}
-        disabled={isLoading}
         placeholder="Search by name, distillery, region..."
-        className="w-full pl-10 pr-10 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50"
+        className="w-full pl-10 pr-10 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
       />
       {query && (
         <button
           onClick={handleClear}
-          disabled={isLoading}
-          className="absolute right-3 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors disabled:opacity-50"
+          className="absolute right-3 p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors"
         >
           <FiX className="w-4 h-4 text-zinc-400" />
         </button>

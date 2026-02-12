@@ -1,13 +1,13 @@
-# Whisky Inventory Management Application
+# Wine Inventory Management Application
 
-A professional full-stack whisky inventory management application built with Next.js 16, React 19, and MySQL. Features a clean admin interface with search, filtering, pagination, and complete CRUD operations.
+A professional full-stack wine inventory management application built with Next.js 16, React 19, and MySQL. Features a clean admin interface with search, filtering, pagination, and complete CRUD operations.
 
 ## Features
 
-- ✅ **Browse & Search**: Real-time search across whisky name, distillery, region, and description
-- ✅ **Create**: Add new whiskies with comprehensive form validation
-- ✅ **Update**: Edit existing whisky records with modal form
-- ✅ **Delete**: Remove whiskies with confirmation dialog
+- ✅ **Browse & Search**: Real-time search across wine name, brand, and description
+- ✅ **Create**: Add new wines with comprehensive form validation
+- ✅ **Update**: Edit existing wine records with modal form
+- ✅ **Delete**: Remove wines with confirmation dialog
 - ✅ **Pagination**: Navigate through large datasets efficiently (10 items per page)
 - ✅ **Responsive Design**: Mobile-first design with Tailwind CSS v4
 - ✅ **Error Handling**: Graceful fallback to mock data when database is unavailable
@@ -44,18 +44,18 @@ Create a `.env.local` file in the project root:
 cp .env.local.example .env.local
 ```
 
-Edit `.env.local` with your MySQL connection details:
+Edit `.env.local` with your MySQL connection details (the project uses `whisky_db` by default):
 
 ```env
 DB_HOST=127.0.0.1
 DB_USER=root
 DB_PASSWORD=
-DB_NAME=whisky_scraper
+DB_NAME=whisky_db
 ```
 
 ### 3. Initialize the Database
 
-Run the initialization script to create the database and table:
+Run the initialization script to create the database and tables:
 
 ```bash
 node scripts/init_db.js
@@ -66,8 +66,10 @@ You should see:
 [v0] Connecting to MySQL server...
 [v0] Creating database if it does not exist...
 [v0] ✓ Database created or already exists
-[v0] Creating whiskies table...
-[v0] ✓ Whiskies table created or already exists
+[v0] Creating wine_products table...
+[v0] ✓ wine_products table created or already exists
+[v0] Creating wine_product_images table...
+[v0] ✓ wine_product_images table created or already exists
 [v0] ✓ Database initialization completed successfully!
 ```
 
@@ -90,31 +92,30 @@ The main dashboard displays:
 - **Pagination**: Navigate through pages efficiently
 - **Refresh Button**: Manually refresh data
 
-### Add Whisky
+### Add Wine
 
-Click the "Add Whisky" button to open the modal form:
-- Fill in required fields (Name, Price, Distillery, Region)
-- Add optional details (Volume, ABV, Age, Cask Type, Description, etc.)
-- Click "Save Whisky" to submit
+Click the "Add Wine" button to open the modal form:
+- Fill in required fields (Name, Price, Brand)
+- Add optional details (URL, Image URL, Description, Source)
+- Click "Save Wine" to submit
 
-### Edit Whisky
+### Edit Wine
 
-Click the edit (pencil) icon on any whisky row to open the edit modal:
+Click the edit (pencil) icon on any wine row to open the edit modal:
 - Modify any field
-- Click "Save Whisky" to update
+- Click "Save Wine" to update
 
-### Delete Whisky
+### Delete Wine
 
-Click the delete (trash) icon on any whisky row:
+Click the delete (trash) icon on any wine row:
 - Confirm deletion in the alert dialog
 - The record will be removed
 
 ### Search
 
-Type in the search bar to filter whiskies by:
+Type in the search bar to filter wines by:
 - Name
-- Distillery
-- Region
+- Brand
 - Description
 
 Results update automatically with 500ms debounce.
