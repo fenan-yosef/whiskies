@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "embed:service": "uvicorn python.embedding_service:app --host 0.0.0.0 --port 8001",
+    "embed:reindex": "curl -X POST http://127.0.0.1:3000/api/embeddings/reindex -H \"Content-Type: application/json\" -d \"{}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

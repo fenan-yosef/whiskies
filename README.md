@@ -209,6 +209,39 @@ Delete a whisky record
 **Query Parameters:**
 - `id` (required): Whisky ID to delete
 
+## Image Embedding Search (Integrated)
+
+This codebase now includes a Python embedding service that indexes images from `wine_product_images.img_blob` and enables visual similarity search.
+
+### Why this model
+
+Default model: `openai/clip-vit-base-patch32` (free, open-source, strong baseline).
+
+For your server (`4 vCPU`, `~8GB RAM`, `no GPU`), this is the best quality/performance balance without paid APIs. Keep `EMBEDDING_BATCH_SIZE=2..4` for safe memory usage.
+
+### New routes in Next.js
+
+- `GET /api/embeddings/health`
+- `POST /api/embeddings/reindex`
+- `POST /api/embeddings/search` (multipart form: `image`, optional `top_k`)
+
+### Python service
+
+- File: `python/embedding_service.py`
+- Requirements: `python/requirements.txt`
+- Service docs: `python/README.md`
+
+Run it:
+
+```bash
+python -m venv .venv
+. .venv/Scripts/Activate.ps1
+pip install -r python/requirements.txt
+uvicorn python.embedding_service:app --host 0.0.0.0 --port 8001
+```
+
+Then run the app and use `/admin` → **Vector Embedding Manager** to rebuild index and search with an uploaded image.
+
 ## Project Structure
 
 ```

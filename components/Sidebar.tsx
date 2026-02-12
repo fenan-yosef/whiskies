@@ -29,11 +29,11 @@ export default function Sidebar() {
           <span>Dashboard</span>
         </Link>
         <Link
-          href="#"
-          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-200 cursor-not-allowed opacity-50"
+          href="/admin"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-200"
         >
           <FiSettings className="w-5 h-5" />
-          <span>Settings</span>
+          <span>Admin + Embeddings</span>
         </Link>
       </nav>
 

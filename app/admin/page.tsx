@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiTrash2, FiEdit, FiChevronLeft, FiChevronRight, FiFilter, FiRefreshCw } from 'react-icons/fi';
 import useSWR from 'swr';
 import WineModal from '../../components/WineModal';
+import EmbeddingManager from '../../components/EmbeddingManager';
 import clsx from 'clsx';
 import { Wine } from '@/lib/mockData';
 
@@ -75,6 +76,8 @@ export default function AdminPage() {
           Add Wine
         </button>
       </header>
+
+      <EmbeddingManager />
 
       {/* Stats Bar */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
