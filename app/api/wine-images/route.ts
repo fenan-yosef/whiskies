@@ -10,16 +10,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: 'Missing product_id' }, { status: 400 });
     }
 
-    const rows: any[] = await query(
-      'SELECT * FROM wine_product_images WHERE product_id = ? ORDER BY position ASC',
-      [productId]
-    );
+    const productIdNum = Number(productId);
+    if (!Number.isFinite(productIdNum) || productIdNum <= 0) {
+      return NextResponse.json({ success: false, error: 'Invalid product_id' }, { status: 400 });
+    }
 
-    // convert any binary blobs to base64 data urls when present
+    const rows = await query(
+      `SELECT id, product_id, url, file_path, position,
+              CASE WHEN (url IS NULL OR url = '') THEN img_blob ELSE NULL END AS img_blob
+         FROM wine_product_images
+        WHERE product_id = ?
+        ORDER BY position ASC, id ASC`,
+      [productIdNum]
+    ) as any[];
+
+    // source priority: url -> blob(data_url) -> file_path
     const images = rows.map((r) => {
       let data_url = null as string | null;
       try {
-        if (r.img_blob) {
+        if (!r.url && r.img_blob) {
           const b = Buffer.from(r.img_blob);
           const base64 = b.toString('base64');
           data_url = `data:image/jpeg;base64,${base64}`;
@@ -32,6 +41,7 @@ export async function GET(req: Request) {
         product_id: r.product_id,
         url: r.url,
         data_url,
+        file_path: r.file_path ?? null,
         position: r.position,
       };
     });

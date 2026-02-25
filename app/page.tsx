@@ -5,8 +5,14 @@ import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { FiPlus, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
-import Sidebar from '@/components/Sidebar';
 import SearchBar from '@/components/SearchBar';
 import WineTable from '@/components/WineTable';
 import WineModal from '@/components/WineModal';
@@ -19,6 +25,8 @@ interface ApiResponse {
   success: boolean;
   data: Wine[];
   total: number;
+  min_id?: number | null;
+  max_id?: number | null;
   page: number;
   totalPages: number;
   error?: string;
@@ -30,12 +38,26 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc'>('id_asc');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
 
   const queryParams = new URLSearchParams();
   if (search) queryParams.append('q', search);
   queryParams.append('page', page.toString());
+  if (sort === 'id_asc') {
+    queryParams.append('sortBy', 'id');
+    queryParams.append('sortOrder', 'asc');
+  } else if (sort === 'id_desc') {
+    queryParams.append('sortBy', 'id');
+    queryParams.append('sortOrder', 'desc');
+  } else if (sort === 'scraped_at_desc') {
+    queryParams.append('sortBy', 'scraped_at');
+    queryParams.append('sortOrder', 'desc');
+  } else {
+    queryParams.append('sortBy', 'scraped_at');
+    queryParams.append('sortOrder', 'asc');
+  }
 
   const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
     `/api/whiskies?${queryParams.toString()}`,
@@ -126,112 +148,123 @@ export default function Dashboard() {
   const isDbDown = data?.error && data?.usingMockData;
 
   return (
-    <div className="flex h-screen bg-white dark:bg-zinc-950">
-      {/* Sidebar */}
-      <Sidebar />
-
-      {/* Main Content */}
-      <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
-        <div className="flex-1 overflow-auto">
-          <div className="p-8 max-w-7xl">
-            {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Wines Inventory</h1>
-                  <p className="text-zinc-600 dark:text-zinc-400 mt-1">
-                    Manage and explore your wine collection
-                  </p>
-                </div>
-                <Button
-                  onClick={handleAddClick}
-                  className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2"
-                >
-                  <FiPlus className="w-5 h-5" />
-                  Add Wine
-                </Button>
+    <>
+      <div className="flex-1 overflow-auto">
+        <div className="p-8 max-w-7xl">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Wines Inventory</h1>
+                <p className="text-zinc-600 dark:text-zinc-400 mt-1">
+                  Manage and explore your wine collection
+                </p>
               </div>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Total Items</p>
-                <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
-                  {isLoading ? '—' : data?.total || 0}
-                </p>
-              </Card>
-              <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Total Pages</p>
-                <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
-                  {isLoading ? '—' : data?.totalPages || 0}
-                </p>
-              </Card>
-              <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Current Page</p>
-                <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
-                  {isLoading ? '—' : data?.page || 1}
-                </p>
-              </Card>
-            </div>
-
-            {/* Error Alert */}
-            {isDbDown && (
-              <Alert className="mb-6 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-                <FiAlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertDescription className="text-amber-800 dark:text-amber-200">
-                  Database is currently unavailable. Using mock data for demonstration. Changes will not persist when the
-                  database comes back online.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Search Bar */}
-            <div className="mb-6">
-              <SearchBar onSearch={handleSearch} isLoading={isLoading} />
-            </div>
-
-            {/* Refresh Button */}
-            <div className="mb-6 flex justify-end">
               <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="flex items-center gap-2 bg-transparent"
+                onClick={handleAddClick}
+                className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2"
               >
-                <FiRefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
+                <FiPlus className="w-5 h-5" />
+                Add Wine
               </Button>
             </div>
+          </div>
 
-            {/* Table */}
-            <div className="mb-8">
-              <WineTable
-                wines={data?.data || []}
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Total Items</p>
+              <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
+                {isLoading ? '—' : (data?.max_id ?? data?.total ?? 0)}
+              </p>
+            </Card>
+            <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Total Pages</p>
+              <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
+                {isLoading ? '—' : data?.totalPages || 0}
+              </p>
+            </Card>
+            <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Current Page</p>
+              <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
+                {isLoading ? '—' : data?.page || 1}
+              </p>
+            </Card>
+          </div>
+
+          {/* Error Alert */}
+          {isDbDown && (
+            <Alert className="mb-6 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+              <FiAlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                Database is currently unavailable. Using mock data for demonstration. Changes will not persist when the
+                database comes back online.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Search Bar */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-[1fr_220px] gap-3">
+            <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+            <Select
+              value={sort}
+              onValueChange={(value: 'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc') => {
+                setSort(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="id_asc">ID: Low to High</SelectItem>
+                <SelectItem value="id_desc">ID: High to Low</SelectItem>
+                <SelectItem value="scraped_at_desc">Newest First</SelectItem>
+                <SelectItem value="scraped_at_asc">Oldest First</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Refresh Button */}
+          <div className="mb-6 flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              className="flex items-center gap-2 bg-transparent"
+            >
+              <FiRefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+
+          {/* Table */}
+          <div className="mb-8">
+            <WineTable
+              wines={data?.data || []}
+              isLoading={isLoading}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteWine}
+            />
+          </div>
+
+          {/* Pagination */}
+          {data && (
+            <div className="flex justify-between items-center">
+              <PaginationComponent
+                currentPage={data.page}
+                totalPages={data.totalPages}
+                onPageChange={setPage}
                 isLoading={isLoading}
-                onEdit={handleEditClick}
-                onDelete={handleDeleteWine}
               />
             </div>
-
-            {/* Pagination */}
-            {data && (
-              <div className="flex justify-between items-center">
-                <PaginationComponent
-                  currentPage={data.page}
-                  totalPages={data.totalPages}
-                  onPageChange={setPage}
-                  isLoading={isLoading}
-                />
-              </div>
-            )}
-          </div>
+          )}
         </div>
-      </main>
+      </div>
 
       {/* Modal */}
       <WineModal isOpen={isModalOpen} onClose={handleModalClose} onSave={handleSaveWine} wine={selectedWine} />
-    </div>
+    </>
   );
 }

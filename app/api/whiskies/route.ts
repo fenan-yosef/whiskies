@@ -6,21 +6,29 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const q = url.searchParams.get('q') || '';
     const page = parseInt(url.searchParams.get('page') || '1', 10);
-    const limit = parseInt(url.searchParams.get('limit') || '25', 10);
+    const limitParam = parseInt(url.searchParams.get('limit') || '25', 10);
+    const limit = Math.min(Math.max(limitParam || 25, 1), 200);
     const offset = (Math.max(page, 1) - 1) * limit;
+    const sortByParam = (url.searchParams.get('sortBy') || 'id').toLowerCase();
+    const sortOrderParam = (url.searchParams.get('sortOrder') || 'asc').toLowerCase();
+    const sortBy = ['id', 'scraped_at'].includes(sortByParam) ? sortByParam : 'id';
+    const sortOrder = sortOrderParam === 'desc' ? 'DESC' : 'ASC';
+    const orderClause = `ORDER BY ${sortBy} ${sortOrder}, id ${sortOrder}`;
 
     let rows;
     let total;
     let total_rows: number | null = null;
     let total_distinct_urls: number | null = null;
     let total_with_image: number | null = null;
+    let min_id: number | null = null;
+    let max_id: number | null = null;
     if (q) {
       // detect which searchable columns exist in the current DB/schema
       const dbName = process.env.DB_NAME || 'whisky_db';
-      const colsRes: any[] = await query(
+      const colsRes = await query(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'wine_products'`,
         [dbName]
-      );
+      ) as any[];
       const existingCols = colsRes.map((r) => r.COLUMN_NAME);
       const candidate = ['name', 'url', 'brand', 'description'];
       const searchCols = candidate.filter((c) => existingCols.includes(c));
@@ -49,10 +57,16 @@ export async function GET(req: Request) {
         params
       ) as any;
       total_with_image = withImageCount.count;
+      const [idRange] = await query(
+        `SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products WHERE ${whereParts}`,
+        params
+      ) as any;
+      min_id = idRange.min_id;
+      max_id = idRange.max_id;
       // LIMIT/OFFSET cannot always be used as prepared-statement params on some MySQL setups
       const safeLimit = Number(limit) || 25;
       const safeOffset = Number(offset) || 0;
-      rows = await query(`SELECT * FROM wine_products WHERE ${whereParts} ORDER BY scraped_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`, params);
+      rows = await query(`SELECT * FROM wine_products WHERE ${whereParts} ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`, params);
     } else {
       const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products`) as any;
       total = totalRow.count;
@@ -63,9 +77,12 @@ export async function GET(req: Request) {
       total_distinct_urls = distinctCount.count;
       const [withImageCount] = await query(`SELECT COUNT(*) as count FROM wine_products wp WHERE (wp.image_url IS NOT NULL AND wp.image_url <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wp.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND i.url <> '')))` ) as any;
       total_with_image = withImageCount.count;
+      const [idRange] = await query(`SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products`) as any;
+      min_id = idRange.min_id;
+      max_id = idRange.max_id;
       const safeLimit = Number(limit) || 25;
       const safeOffset = Number(offset) || 0;
-      rows = await query(`SELECT * FROM wine_products ORDER BY scraped_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`);
+      rows = await query(`SELECT * FROM wine_products ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`);
     }
 
     return NextResponse.json({
@@ -75,6 +92,10 @@ export async function GET(req: Request) {
       total_rows,
       total_distinct_urls,
       total_with_image,
+      min_id,
+      max_id,
+      sortBy,
+      sortOrder: sortOrder.toLowerCase(),
       page,
       limit,
       totalPages: Math.ceil(Number(total || 0) / Number(limit || 25)),

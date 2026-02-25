@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import './globals.css'
+import Sidebar from '@/components/Sidebar'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -39,7 +40,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        {children}
+        <div className="flex h-screen bg-white dark:bg-zinc-950">
+          <Sidebar />
+
+          <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+            {children}
+          </main>
+        </div>
+
         <Toaster />
         <Analytics />
       </body>
