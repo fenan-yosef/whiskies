@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build:
@@ -33,7 +33,4 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
       - name: Run remote deploy script
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'bash -s' < ./scripts/deploy.sh
-        env:
-          REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-          POST_DEPLOY_COMMANDS: ${{ secrets.POST_DEPLOY_COMMANDS }}
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "REMOTE_DIR='${{ secrets.REMOTE_DIR }}' APP_PORT='${{ secrets.APP_PORT }}' POST_DEPLOY_COMMANDS='${{ secrets.POST_DEPLOY_COMMANDS }}' bash -s" < ./scripts/deploy.sh
