@@ -28,13 +28,13 @@ export default function Sidebar() {
           <FiHome className="w-5 h-5" />
           <span>Dashboard</span>
         </Link>
-        <Link
+        {/* <Link
           href="/admin"
           className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-200"
         >
           <FiSettings className="w-5 h-5" />
           <span>Admin + Embeddings</span>
-        </Link>
+        </Link> */}
       </nav>
 
       {/* Footer Section */}

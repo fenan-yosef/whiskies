@@ -30,7 +30,7 @@ export async function GET(req: Request) {
         [dbName]
       ) as any[];
       const existingCols = colsRes.map((r) => r.COLUMN_NAME);
-      const candidate = ['name', 'url', 'brand', 'description'];
+      const candidate = ['name', 'url', 'brand', 'description', 'category', 'region', 'country', 'distillery', 'style', 'vintage', 'age_years', 'bottling_year', 'categories_list'];
       const searchCols = candidate.filter((c) => existingCols.includes(c));
 
       // if none of the expected columns exist, return empty result set
@@ -45,28 +45,43 @@ export async function GET(req: Request) {
       const whereParts = searchCols.map((c) => `${c} REGEXP ?`).join(' OR ');
       const params = Array(searchCols.length).fill(pattern);
 
-      const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products WHERE ${whereParts}`, params) as any;
+      // additional exact filter params supported by UI
+      const filterCandidates = ['brand','category','region','country','distillery','style','vintage','age_years','bottling_year'];
+      const filterParts: string[] = [];
+      const filterParams: any[] = [];
+      for (const f of filterCandidates) {
+        const v = url.searchParams.get(f);
+        if (v) {
+          filterParts.push(`${f} = ?`);
+          filterParams.push(v);
+        }
+      }
+
+      const combinedWhere = filterParts.length > 0 ? `(${whereParts}) AND (${filterParts.join(' AND ')})` : whereParts;
+      const combinedParams = filterParts.length > 0 ? params.concat(filterParams) : params;
+
+      const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products WHERE ${combinedWhere}`, combinedParams) as any;
       total = totalRow.count;
       // additional debug counts for filtered set
-      const [rowsCount] = await query(`SELECT COUNT(*) as count FROM wine_products WHERE ${whereParts}`, params) as any;
+      const [rowsCount] = await query(`SELECT COUNT(*) as count FROM wine_products WHERE ${combinedWhere}`, combinedParams) as any;
       total_rows = rowsCount.count;
-      const [distinctCount] = await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products WHERE ${whereParts}`, params) as any;
+      const [distinctCount] = await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products WHERE ${combinedWhere}`, combinedParams) as any;
       total_distinct_urls = distinctCount.count;
       const [withImageCount] = await query(
-        `SELECT COUNT(*) as count FROM wine_products wp WHERE (${whereParts}) AND ((wp.image_url IS NOT NULL AND wp.image_url <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wp.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND i.url <> ''))))`,
-        params
+        `SELECT COUNT(*) as count FROM wine_products wp WHERE (${combinedWhere}) AND ((wp.image_url IS NOT NULL AND wp.image_url <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wp.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND i.url <> ''))))`,
+        combinedParams
       ) as any;
       total_with_image = withImageCount.count;
       const [idRange] = await query(
-        `SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products WHERE ${whereParts}`,
-        params
+        `SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products WHERE ${combinedWhere}`,
+        combinedParams
       ) as any;
       min_id = idRange.min_id;
       max_id = idRange.max_id;
       // LIMIT/OFFSET cannot always be used as prepared-statement params on some MySQL setups
       const safeLimit = Number(limit) || 25;
       const safeOffset = Number(offset) || 0;
-      rows = await query(`SELECT * FROM wine_products WHERE ${whereParts} ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`, params);
+      rows = await query(`SELECT * FROM wine_products WHERE ${combinedWhere} ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`, combinedParams);
     } else {
       const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products`) as any;
       total = totalRow.count;

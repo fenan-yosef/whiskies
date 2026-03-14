@@ -36,7 +36,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   // default display: newest (highest id) first
   const sortedWines = [...wines].sort((a, b) => b.id - a.id);
-  const [imagesModalProduct, setImagesModalProduct] = useState<number | null>(null);
+  const [imagesModalWine, setImagesModalWine] = useState<Wine | null>(null);
   const [imagesModalOpen, setImagesModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<string | null>('id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -147,6 +147,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
               <TableRow className="bg-zinc-50 dark:bg-zinc-900">
               <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer" onClick={() => handleSort('id')}>ID {sortBy === 'id' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</TableHead>
               <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer" onClick={() => handleSort('name')}>Name {sortBy === 'name' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</TableHead>
+              <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer">Brand</TableHead>
               <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer" onClick={() => handleSort('price')}>Price {sortBy === 'price' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</TableHead>
               <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer" onClick={() => handleSort('currency')}>Currency {sortBy === 'currency' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</TableHead>
               <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer" onClick={() => handleSort('abv')}>ABV {sortBy === 'abv' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</TableHead>
@@ -186,7 +187,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
             ) : (
               displayedWines.map((wine) => {
                 const rawPrice = wine.price;
-                const parsed = typeof rawPrice === 'number' ? rawPrice : (typeof rawPrice === 'string' ? parseFloat(rawPrice.replace(/[^0-9.-]+/g, '')) : NaN);
+                const parsed = typeof rawPrice === 'number' ? rawPrice : (typeof (rawPrice as any) === 'string' ? parseFloat((rawPrice as any).replace(/[^0-9.-]+/g, '')) : NaN);
                 const priceDisplay = !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (rawPrice ? String(rawPrice) : 'N/A');
 
                 return (
@@ -196,13 +197,14 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                   >
                     <TableCell className="font-medium text-zinc-900 dark:text-white">{wine.id}</TableCell>
                     <TableCell className="font-medium text-zinc-900 dark:text-white">{wine.name}</TableCell>
+                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).brand || '-'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">{priceDisplay}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).currency || 'N/A'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).abv ?? 'N/A'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).volume ?? 'N/A'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">
                       <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => { setImagesModalProduct(wine.id); setImagesModalOpen(true); }}>
+                        <Button size="sm" onClick={() => { setImagesModalWine(wine); setImagesModalOpen(true); }}>
                           View
                         </Button>
                       </div>
@@ -244,7 +246,18 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
               ))
             ) : (
               displayedWines.map((w) => {
-                const imgs = (w as any).images ?? ((w.image_url && [w.image_url]) || []);
+                const imgs: string[] = [];
+                if (w.image_url) imgs.push(w.image_url);
+                if (w.all_images) {
+                  try {
+                    const parsed = typeof w.all_images === 'string' ? JSON.parse(w.all_images) : w.all_images;
+                    if (Array.isArray(parsed)) {
+                      parsed.forEach((img: any) => { if (typeof img === 'string' && img && !imgs.includes(img)) imgs.push(img); });
+                    }
+                  } catch (e) {
+                    // fallback if not JSON
+                  }
+                }
                 return (
                   <div key={w.id} className="border rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
                     <div className="h-48 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
@@ -261,7 +274,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                     </div>
                     <div className="p-3">
                       <div className="font-medium text-zinc-900 dark:text-white">{w.id} — {w.name}</div>
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">Price: {(() => { const raw = w.price; const parsed = typeof raw === 'number' ? raw : (typeof raw === 'string' ? parseFloat(raw.replace(/[^0-9.-]+/g, '')) : NaN); return !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (raw ? String(raw) : 'N/A'); })()} • {(w as any).currency || 'N/A'} • ABV: {(w as any).abv ?? 'N/A'} • Vol: {(w as any).volume ?? 'N/A'}</div>
+                      <div className="text-sm text-zinc-600 dark:text-zinc-400">Price: {(() => { const raw = w.price; const parsed = typeof raw === 'number' ? raw : (typeof (raw as any) === 'string' ? parseFloat((raw as any).replace(/[^0-9.-]+/g, '')) : NaN); return !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (raw ? String(raw) : 'N/A'); })()} • {(w as any).currency || 'N/A'} • ABV: {(w as any).abv ?? 'N/A'} • Vol: {(w as any).volume ?? 'N/A'}</div>
                       <div className="text-sm truncate mt-2"><a href={w.url || '#'} target="_blank" rel="noreferrer" className="text-amber-600">Source link</a></div>
                       <div className="flex items-center gap-2 mt-3">
                         <Button variant="ghost" size="sm" onClick={() => onEdit(w)} className="h-8 w-8 p-0">
@@ -270,7 +283,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                         <Button variant="ghost" size="sm" onClick={() => setDeleteId(w.id)} className="h-8 w-8 p-0">
                           <FiTrash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                         </Button>
-                        <Button size="sm" onClick={() => { setImagesModalProduct(w.id); setImagesModalOpen(true); }} className="h-8">
+                        <Button size="sm" onClick={() => { setImagesModalWine(w); setImagesModalOpen(true); }} className="h-8">
                           View Images
                         </Button>
                       </div>
@@ -283,7 +296,16 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
         )}
       </div>
 
-      <WineImagesModal productId={imagesModalProduct} open={imagesModalOpen} onOpenChange={(open) => { if (!open) setImagesModalProduct(null); setImagesModalOpen(open); }} />
+      <WineImagesModal
+        productId={imagesModalWine?.id ?? null}
+        mainImage={imagesModalWine?.image_url}
+        otherImages={imagesModalWine?.all_images}
+        open={imagesModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setImagesModalWine(null);
+          setImagesModalOpen(open);
+        }}
+      />
 
       {/* bottom pagination duplicate when parent provided */}
       {onPageChange && (

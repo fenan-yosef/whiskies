@@ -4,6 +4,7 @@ export interface Wine {
   url: string;
   price: number | null;
   image_url: string;
+  all_images?: string | string[];
   description: string;
   brand: string;
   source: string;

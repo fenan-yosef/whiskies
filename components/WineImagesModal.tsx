@@ -16,11 +16,13 @@ interface ImageRecord {
 
 interface Props {
   productId: number | null;
+  mainImage?: string | null;
+  otherImages?: string | string[] | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export default function WineImagesModal({ productId, open, onOpenChange }: Props) {
+export default function WineImagesModal({ productId, mainImage, otherImages, open, onOpenChange }: Props) {
   const [images, setImages] = useState<ImageRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -65,24 +67,64 @@ export default function WineImagesModal({ productId, open, onOpenChange }: Props
 
         <div className="p-4">
           {loading ? (
-            <div className="text-center py-8">Loading images...</div>
-          ) : images
-              .map((img) => img.url || img.data_url || img.file_path || null)
-              .filter(Boolean).length === 0 ? (
-            <div className="text-center py-8">No images available for this item.</div>
+            <div className="text-center py-8 text-zinc-500 animate-pulse">Loading all images...</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {images
-                .map((img) => {
-                  const src = img.url || img.data_url || img.file_path || null;
-                  return src ? { ...img, src } : null;
-                })
-                .filter(Boolean)
-                .map((img) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={img!.id} src={img!.src} alt={`image-${img!.id}`} className="w-full h-64 object-contain bg-zinc-100" />
-                ))}
-            </div>
+            (() => {
+              // Collect all potential image sources
+              const sources = new Set<string>();
+              
+              // 1. Main image from product table
+              if (mainImage) sources.add(mainImage);
+              
+              // 2. Secondary images from all_images field (JSON array or string)
+              if (otherImages) {
+                try {
+                  const parsed = typeof otherImages === 'string' ? JSON.parse(otherImages) : otherImages;
+                  if (Array.isArray(parsed)) {
+                    parsed.forEach(img => { if (img) sources.add(img); });
+                  } else if (typeof parsed === 'string') {
+                    sources.add(parsed);
+                  }
+                } catch (e) {
+                  // If it's not JSON, maybe it's a comma-separated list?
+                  if (typeof otherImages === 'string') {
+                     otherImages.split(',').forEach(s => { if (s.trim()) sources.add(s.trim()); });
+                  }
+                }
+              }
+
+              // 3. Images from independent images table
+              images.forEach(img => {
+                const src = img.url || img.data_url || img.file_path;
+                if (src) sources.add(src);
+              });
+
+              const validImages = Array.from(sources).filter(Boolean);
+
+              if (validImages.length === 0) {
+                return <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-900 rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                  <p className="text-zinc-500">No images available for this item.</p>
+                </div>;
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {validImages.map((src, idx) => (
+                    <div key={idx} className="group relative aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 hover:shadow-xl transition-all duration-300">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={src}
+                        alt={`image-${idx}`}
+                        className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/50 backdrop-blur-md text-[10px] text-white rounded-full font-bold uppercase tracking-tighter">
+                        {src === mainImage ? 'Main Image' : `Gallery ${idx + 1}`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
           )}
         </div>
 

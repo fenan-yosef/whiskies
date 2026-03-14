@@ -1,22 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { FiPlus, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import SearchBar from '@/components/SearchBar';
 import WineTable from '@/components/WineTable';
 import WineModal from '@/components/WineModal';
 import PaginationComponent from '@/components/PaginationComponent';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { Wine } from '@/lib/mockData';
 import { toast } from 'sonner';
 import debounce from 'lodash.debounce';
@@ -33,10 +27,20 @@ interface ApiResponse {
   usingMockData?: boolean;
 }
 
+interface FilterResponse {
+  success: boolean;
+  data: string[];
+}
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Dashboard() {
+  const [mounted, setMounted] = useState(false);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc'>('id_asc');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +48,19 @@ export default function Dashboard() {
 
   const queryParams = new URLSearchParams();
   if (search) queryParams.append('q', search);
+  // filter params
+  const [brandFilter, setBrandFilter] = useState<string | null>(null);
+  const [regionFilter, setRegionFilter] = useState<string | null>(null);
+  const [countryFilter, setCountryFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [distilleryFilter, setDistilleryFilter] = useState<string | null>(null);
+
+  // load filter options
+  const { data: brandsData } = useSWR<FilterResponse>('/api/whiskies/filters?field=brand', fetcher);
+  const { data: regionsData } = useSWR<FilterResponse>('/api/whiskies/filters?field=region', fetcher);
+  const { data: countriesData } = useSWR<FilterResponse>('/api/whiskies/filters?field=country', fetcher);
+  const { data: categoriesData } = useSWR<FilterResponse>('/api/whiskies/filters?field=category', fetcher);
+  const { data: distilleriesData } = useSWR<FilterResponse>('/api/whiskies/filters?field=distillery', fetcher);
   queryParams.append('page', page.toString());
   if (sort === 'id_asc') {
     queryParams.append('sortBy', 'id');
@@ -58,6 +75,12 @@ export default function Dashboard() {
     queryParams.append('sortBy', 'scraped_at');
     queryParams.append('sortOrder', 'asc');
   }
+
+  if (brandFilter) queryParams.append('brand', brandFilter);
+  if (regionFilter) queryParams.append('region', regionFilter);
+  if (countryFilter) queryParams.append('country', countryFilter);
+  if (categoryFilter) queryParams.append('category', categoryFilter);
+  if (distilleryFilter) queryParams.append('distillery', distilleryFilter);
 
   const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
     `/api/whiskies?${queryParams.toString()}`,
@@ -175,7 +198,7 @@ export default function Dashboard() {
             <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
               <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium">Total Items</p>
               <p className="text-2xl font-bold text-zinc-900 dark:text-white mt-1">
-                {isLoading ? '—' : (data?.max_id ?? data?.total ?? 0)}
+                {isLoading ? '—' : (data?.total ?? 0)}
               </p>
             </Card>
             <Card className="p-4 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
@@ -203,26 +226,112 @@ export default function Dashboard() {
             </Alert>
           )}
 
-          {/* Search Bar */}
-          <div className="mb-6 grid grid-cols-1 md:grid-cols-[1fr_220px] gap-3">
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} />
-            <Select
-              value={sort}
-              onValueChange={(value: 'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc') => {
-                setSort(value);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="id_asc">ID: Low to High</SelectItem>
-                <SelectItem value="id_desc">ID: High to Low</SelectItem>
-                <SelectItem value="scraped_at_desc">Newest First</SelectItem>
-                <SelectItem value="scraped_at_asc">Oldest First</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Search Bar & Sort */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-[1fr_220px] gap-3 items-end">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Search Collection</label>
+              <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Sort Items</label>
+              {!mounted ? (
+                <div className="h-10 w-full bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-md" />
+              ) : (
+                <SearchableSelect
+                  value={sort}
+                  onValueChange={(v) => {
+                    setSort(v as any);
+                    setPage(1);
+                  }}
+                  placeholder="Sort by"
+                  options={[
+                    { label: 'ID: Low to High', value: 'id_asc' },
+                    { label: 'ID: High to Low', value: 'id_desc' },
+                    { label: 'Newest First', value: 'scraped_at_desc' },
+                    { label: 'Oldest First', value: 'scraped_at_asc' },
+                  ]}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Filter Labels & Selects */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-5 gap-3">
+            {!mounted ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="h-3 w-12 bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded ml-1" />
+                  <div className="h-10 w-full bg-zinc-100 dark:bg-zinc-800 animate-pulse rounded-md" />
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Brand</label>
+                  <SearchableSelect
+                    value={brandFilter ?? '__all'}
+                    onValueChange={(v) => { setBrandFilter(v === '__all' ? null : v); setPage(1); }}
+                    placeholder="All Brands"
+                    options={[
+                      { label: 'All Brands', value: '__all' },
+                      ...(brandsData?.data || []).map(b => ({ label: b, value: b }))
+                    ]}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Region</label>
+                  <SearchableSelect
+                    value={regionFilter ?? '__all'}
+                    onValueChange={(v) => { setRegionFilter(v === '__all' ? null : v); setPage(1); }}
+                    placeholder="All Regions"
+                    options={[
+                      { label: 'All Regions', value: '__all' },
+                      ...(regionsData?.data || []).map(r => ({ label: r, value: r }))
+                    ]}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Country</label>
+                  <SearchableSelect
+                    value={countryFilter ?? '__all'}
+                    onValueChange={(v) => { setCountryFilter(v === '__all' ? null : v); setPage(1); }}
+                    placeholder="All Countries"
+                    options={[
+                      { label: 'All Countries', value: '__all' },
+                      ...(countriesData?.data || []).map(c => ({ label: c, value: c }))
+                    ]}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Category</label>
+                  <SearchableSelect
+                    value={categoryFilter ?? '__all'}
+                    onValueChange={(v) => { setCategoryFilter(v === '__all' ? null : v); setPage(1); }}
+                    placeholder="All Categories"
+                    options={[
+                      { label: 'All Categories', value: '__all' },
+                      ...(categoriesData?.data || []).map(c => ({ label: c, value: c }))
+                    ]}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest ml-1">Distillery</label>
+                  <SearchableSelect
+                    value={distilleryFilter ?? '__all'}
+                    onValueChange={(v) => { setDistilleryFilter(v === '__all' ? null : v); setPage(1); }}
+                    placeholder="All Distilleries"
+                    options={[
+                      { label: 'All Distilleries', value: '__all' },
+                      ...(distilleriesData?.data || []).map(d => ({ label: d, value: d }))
+                    ]}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Refresh Button */}
