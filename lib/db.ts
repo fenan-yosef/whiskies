@@ -9,7 +9,7 @@ const DB_NAME = process.env.DB_NAME || 'whisky_db';
 if (process.env.NODE_ENV === 'production' && !process.env.DB_PASSWORD) {
   console.warn('[db] DB_PASSWORD is empty in production. Set it via server env.');
 }
-//hello
+//hellos
 const pool = mysql.createPool({
   host: DB_HOST,
   port: DB_PORT,
