@@ -153,7 +153,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
               <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer" onClick={() => handleSort('volume')}>Volume {sortBy === 'volume' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</TableHead>
               <TableHead className="font-semibold text-zinc-900 dark:text-white">Images</TableHead>
               <TableHead className="font-semibold text-zinc-900 dark:text-white cursor-pointer" onClick={() => handleSort('url')}>URL {sortBy === 'url' ? (sortDir === 'asc' ? '▲' : '▼') : ''}</TableHead>
-              <TableHead className="text-right font-semibold text-zinc-900 dark:text-white">Actions</TableHead>
+              {/* <TableHead className="text-right font-semibold text-zinc-900 dark:text-white">Actions</TableHead> */}
             </TableRow>
           </TableHeader>
           <TableBody>
