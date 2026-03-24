@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FiEdit, FiTrash2 } from 'react-icons/fi';
 import { FiGrid, FiList } from 'react-icons/fi';
 import { Wine } from '@/lib/mockData';
 import WineImagesModal from './WineImagesModal';
@@ -214,22 +213,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onEdit(wine)}
-                          className="h-8 w-8 p-0 hover:bg-amber-100 dark:hover:bg-amber-900"
-                        >
-                          <FiEdit className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteId(wine.id)}
-                          className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900"
-                        >
-                          <FiTrash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                        </Button>
+                        {/* Edit and Delete buttons removed */}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -277,12 +261,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                       <div className="text-sm text-zinc-600 dark:text-zinc-400">Price: {(() => { const raw = w.price; const parsed = typeof raw === 'number' ? raw : (typeof (raw as any) === 'string' ? parseFloat((raw as any).replace(/[^0-9.-]+/g, '')) : NaN); return !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (raw ? String(raw) : 'N/A'); })()} • {(w as any).currency || 'N/A'} • ABV: {(w as any).abv ?? 'N/A'} • Vol: {(w as any).volume ?? 'N/A'}</div>
                       <div className="text-sm truncate mt-2"><a href={w.url || '#'} target="_blank" rel="noreferrer" className="text-amber-600">Source link</a></div>
                       <div className="flex items-center gap-2 mt-3">
-                        <Button variant="ghost" size="sm" onClick={() => onEdit(w)} className="h-8 w-8 p-0">
-                          <FiEdit className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setDeleteId(w.id)} className="h-8 w-8 p-0">
-                          <FiTrash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                        </Button>
+                        {/* Edit and Delete buttons removed */}
                         <Button size="sm" onClick={() => { setImagesModalWine(w); setImagesModalOpen(true); }} className="h-8">
                           View Images
                         </Button>
