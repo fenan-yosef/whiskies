@@ -81,19 +81,19 @@ export async function GET(req: Request) {
     const withImageCondition = `((wine_products.image_url IS NOT NULL AND TRIM(wine_products.image_url) <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wine_products.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND TRIM(i.url) <> ''))))`;
     const withImageWhere = whereClause ? `${whereClause} AND ${withImageCondition}` : `WHERE ${withImageCondition}`;
 
-    const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams) as any[];
+    const [totalRow] = (await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams)) as any[];
     const total = Number(totalRow?.count || 0);
 
-    const [rowsCount] = await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams) as any[];
+    const [rowsCount] = (await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams)) as any[];
     const total_rows = Number(rowsCount?.count || 0);
 
-    const [distinctCount] = await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products ${whereClause}`, whereParams) as any[];
+    const [distinctCount] = (await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products ${whereClause}`, whereParams)) as any[];
     const total_distinct_urls = Number(distinctCount?.count || 0);
 
-    const [withImageCount] = await query(`SELECT COUNT(*) as count FROM wine_products ${withImageWhere}`, whereParams) as any[];
+    const [withImageCount] = (await query(`SELECT COUNT(*) as count FROM wine_products ${withImageWhere}`, whereParams)) as any[];
     const total_with_image = Number(withImageCount?.count || 0);
 
-    const [idRange] = await query(`SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products ${whereClause}`, whereParams) as any[];
+    const [idRange] = (await query(`SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products ${whereClause}`, whereParams)) as any[];
     const min_id = idRange?.min_id ?? null;
     const max_id = idRange?.max_id ?? null;
 
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
       has_images: hasImages,
       has_reviews: hasReviews,
     });
-  } catch (err) {
+  } catch (err: unknown) {
     // eslint-disable-next-line no-console
     console.error('GET /api/whiskies error', err);
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });

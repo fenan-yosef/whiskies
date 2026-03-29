@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,9 +55,10 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchBarResetKey, setSearchBarResetKey] = useState(0);
 
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc'>('id_desc');
+  const [sort, setSort] = useState<'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc'>('id_asc');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
 
@@ -124,11 +125,18 @@ export default function Dashboard() {
     []
   );
 
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel?.();
+    };
+  }, [debouncedSearch]);
+
   const handleSearch = (query: string) => {
     debouncedSearch(query);
   };
 
   const clearFilters = () => {
+    debouncedSearch.cancel?.();
     setBrandFilter(null);
     setRegionFilter(null);
     setCountryFilter(null);
@@ -137,7 +145,10 @@ export default function Dashboard() {
     setHasImagesFilter(false);
     setHasReviewsFilter(false);
     setSearch('');
+    setSort('id_asc');
     setPage(1);
+    setShowFilters(false);
+    setSearchBarResetKey((k) => k + 1);
   };
 
   const handleAddClick = () => {
@@ -205,6 +216,7 @@ export default function Dashboard() {
 
   const isDbDown = data?.error && data?.usingMockData;
   const activeFiltersCount = [brandFilter, regionFilter, countryFilter, categoryFilter, distilleryFilter].filter(Boolean).length + Number(hasImagesFilter) + Number(hasReviewsFilter);
+  const hasAnyAppliedControls = Boolean(search) || activeFiltersCount > 0 || sort !== 'id_asc';
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-hidden">
@@ -320,6 +332,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
                 <div className="flex flex-col gap-3 sm:flex-row xl:col-span-8">
                   <SearchBar
+                    key={searchBarResetKey}
                     onSearch={handleSearch}
                     className="w-full"
                     inputClassName="h-12 rounded-xl border-slate-300 bg-white/90 text-slate-800 shadow-sm placeholder:text-slate-400 focus:ring-2 focus:ring-[#2271b1]/30"
@@ -342,6 +355,17 @@ export default function Dashboard() {
                     )}
                     <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                   </Button>
+
+                  {hasAnyAppliedControls && (
+                    <Button
+                      onClick={clearFilters}
+                      variant="outline"
+                      className="h-12 rounded-xl border-slate-300 bg-white px-4 font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <FilterX className="mr-2 h-4 w-4" />
+                      Clear all
+                    </Button>
+                  )}
                 </div>
 
                 <div className="xl:col-span-4">
