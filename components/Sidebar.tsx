@@ -34,9 +34,9 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-medium text-zinc-300">
+        {/* <div className="mt-5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-medium text-zinc-300">
           Premium CMS styling tuned for agency-friendly demos.
-        </div>
+        </div> */}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-5">
@@ -75,7 +75,7 @@ export default function Sidebar() {
       </div>
 
       <div className="border-t border-white/10 p-4">
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+        {/* <div className="mb-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#2271b1] to-[#135e96] text-xs font-bold text-white">
             AD
           </div>
@@ -83,12 +83,12 @@ export default function Sidebar() {
             <p className="text-sm font-semibold text-white">Admin User</p>
             <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">Publisher</p>
           </div>
-        </div>
+        </div> */}
 
-        <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/20">
+        {/* <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/20">
           <FiLogOut className="h-4 w-4" />
           <span>Exit Session</span>
-        </button>
+        </button> */}
       </div>
     </aside>
   );
