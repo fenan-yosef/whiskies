@@ -9,9 +9,10 @@ interface SearchBarProps {
   onSearch: (query: string) => void;
   isLoading?: boolean;
   className?: string;
+  inputClassName?: string;
 }
 
-export default function SearchBar({ onSearch, isLoading, className }: SearchBarProps) {
+export default function SearchBar({ onSearch, isLoading, className, inputClassName }: SearchBarProps) {
   const [query, setQuery] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,7 +34,7 @@ export default function SearchBar({ onSearch, isLoading, className }: SearchBarP
         value={query}
         onChange={handleChange}
         placeholder="Search by name, distillery, region..."
-        className="w-full pl-10 pr-10 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+        className={`w-full pl-10 pr-10 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent ${inputClassName ?? ''}`}
       />
       {query && (
         <button

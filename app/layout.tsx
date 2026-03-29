@@ -1,13 +1,21 @@
 import React from "react"
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: '--font-body',
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  variable: '--font-heading',
+  weight: ['600', '700'],
+});
 
 export const metadata: Metadata = {
   title: 'Wine Inventory Manager',
@@ -39,8 +47,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans antialiased text-zinc-900 dark:text-zinc-50`}>
-        <div className="flex h-screen bg-white dark:bg-zinc-950">
+      <body className={`${plusJakartaSans.variable} ${playfairDisplay.variable} font-sans antialiased text-zinc-900 dark:text-zinc-50 wp-body`}>
+        <div className="wp-shell flex h-screen">
           <Sidebar />
 
           <main className="flex-1 ml-72 flex flex-col h-screen overflow-hidden">

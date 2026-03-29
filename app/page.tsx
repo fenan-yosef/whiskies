@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,7 @@ import {
   FiDatabase, 
   FiTag, 
   FiMapPin, 
-  FiLayers,
-  FiSearch,
-  FiTrendingUp,
-  FiBox
+  FiLayers
 } from 'react-icons/fi';
 import { 
   BarChart3, 
@@ -29,7 +26,6 @@ import {
 import SearchBar from '@/components/SearchBar';
 import WineTable from '@/components/WineTable';
 import WineModal from '@/components/WineModal';
-import PaginationComponent from '@/components/PaginationComponent';
 import { SearchableSelect } from '@/components/SearchableSelect';
 import { Wine } from '@/lib/mockData';
 import { toast } from 'sonner';
@@ -57,13 +53,8 @@ interface FilterResponse {
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function Dashboard() {
-  const [mounted, setMounted] = useState(false);
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc'>('id_desc');
@@ -111,7 +102,7 @@ export default function Dashboard() {
     return p;
   }, [search, page, sort, brandFilter, regionFilter, countryFilter, categoryFilter, distilleryFilter]);
 
-  const { data, error, isLoading, mutate } = useSWR<ApiResponse>(
+  const { data, isLoading, mutate } = useSWR<ApiResponse>(
     `/api/whiskies?${queryParams.toString()}`,
     fetcher,
     {
@@ -210,229 +201,261 @@ export default function Dashboard() {
   const activeFiltersCount = [brandFilter, regionFilter, countryFilter, categoryFilter, distilleryFilter].filter(Boolean).length;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-zinc-50/50 dark:bg-zinc-950/50 overflow-hidden">
-      {/* Top Navigation / Breadcrumbs */}
-      <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-10">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium">
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Dashboard</span>
-            <span className="text-zinc-300 dark:text-zinc-700">/</span>
-            <span className="text-zinc-900 dark:text-white">Whiskies</span>
-          </div>
-          {isLoading && (
-            <Badge variant="outline" className="animate-pulse bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">
-              Syncing...
-            </Badge>
-          )}
-        </div>
-        
+    <div className="flex h-full flex-1 flex-col overflow-hidden">
+      <header className="wp-topbar z-20 flex h-[74px] shrink-0 items-center justify-between border-b border-slate-200/80 px-6 md:px-8">
         <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <LayoutDashboard className="h-4 w-4 text-[#2271b1]" />
+            <span>Dashboard</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-slate-900">Inventory</span>
+          </div>
+          <Badge className="hidden border border-[#2271b1]/30 bg-[#2271b1]/10 text-[11px] font-semibold text-[#135e96] sm:inline-flex">
+            WordPress-Pro Experience
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
             onClick={handleRefresh}
-            className="h-9 px-3 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+            className="h-10 rounded-xl border-slate-300 bg-white/80 px-4 text-slate-700 shadow-sm hover:bg-white"
           >
-            <FiRefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            <FiRefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1" />
           <Button
             onClick={handleAddClick}
-            size="sm"
-            className="h-9 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-100 rounded-xl px-4 font-semibold shadow-lg shadow-zinc-200 dark:shadow-none"
+            className="h-10 rounded-xl border border-[#135e96] bg-[#2271b1] px-4 font-semibold text-white shadow-lg shadow-blue-900/20 hover:bg-[#135e96]"
           >
-            <FiPlus className="w-4 h-4 mr-2" />
+            <FiPlus className="mr-2 h-4 w-4" />
             New Entry
           </Button>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="p-8 max-w-[1600px] mx-auto space-y-8 pb-12">
-          
-          {/* Welcome Area */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-1">
-              <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
-                Inventory <span className="text-zinc-400 font-light">Overview</span>
-              </h1>
-              <p className="text-zinc-500 font-medium">
-                Monitor metrics, search catalog and manage distillery listings.
-              </p>
-            </div>
+      <div className="flex-1 overflow-y-auto px-5 py-6 md:px-8">
+        <div className="mx-auto max-w-[1600px] space-y-6 pb-10">
+          <section className="wp-card animate-rise rounded-[28px] p-5 md:p-7">
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+              <div className="xl:col-span-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2271b1]">Editorial Control Panel</p>
+                <h1 className="wp-heading mt-2 text-3xl font-semibold leading-tight text-slate-900 md:text-4xl">
+                  Whisky Inventory Command Center
+                </h1>
+                <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
+                  A polished, client-comfortable CMS interface with richer visual hierarchy, smoother motion, and focused inventory controls.
+                </p>
 
-            {/* Global Stats Inline */}
-            <div className="flex gap-8 px-6 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
-               <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-tight">Total Products</span>
-                  <span className="text-2xl font-black text-zinc-900 dark:text-white">
-                    {data?.total?.toLocaleString() ?? '—'}
-                  </span>
-               </div>
-               <div className="w-px bg-zinc-100 dark:bg-zinc-800" />
-               <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-tight">With Media</span>
-                  <span className="text-2xl font-black text-amber-500">
-                    {data?.total_with_image?.toLocaleString() ?? '—'}
-                  </span>
-               </div>
-               <div className="w-px bg-zinc-100 dark:bg-zinc-800" />
-               <div className="flex flex-col text-zinc-400">
-                  <span className="text-[10px] font-bold uppercase tracking-widest leading-tight">Page</span>
-                  <span className="text-2xl font-black">{page} of {data?.totalPages ?? 1}</span>
-               </div>
-            </div>
-          </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700">
+                    {isLoading ? 'Syncing inventory' : 'Live database feed'}
+                  </Badge>
+                  <Badge className="border border-slate-200 bg-slate-100 text-slate-700">
+                    {activeFiltersCount} active filters
+                  </Badge>
+                  <Badge className="border border-blue-200 bg-blue-50 text-[#135e96]">
+                    Page {page} of {data?.totalPages ?? 1}
+                  </Badge>
+                </div>
+              </div>
 
-          {/* Error Alert */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:col-span-7">
+                <div className="wp-stat-card rounded-2xl p-4">
+                  <div className="flex items-start justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Total Products</p>
+                    <FiDatabase className="h-4 w-4 text-[#2271b1]" />
+                  </div>
+                  <p className="mt-3 text-2xl font-extrabold text-slate-900">{data?.total?.toLocaleString() ?? '—'}</p>
+                  <p className="mt-1 text-xs text-slate-500">Indexed entries in your catalog</p>
+                </div>
+
+                <div className="wp-stat-card rounded-2xl p-4">
+                  <div className="flex items-start justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">With Media</p>
+                    <FiLayers className="h-4 w-4 text-[#2271b1]" />
+                  </div>
+                  <p className="mt-3 text-2xl font-extrabold text-slate-900">{data?.total_with_image?.toLocaleString() ?? '—'}</p>
+                  <p className="mt-1 text-xs text-slate-500">Products enriched with imagery</p>
+                </div>
+
+                <div className="wp-stat-card rounded-2xl p-4">
+                  <div className="flex items-start justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">View Window</p>
+                    <BarChart3 className="h-4 w-4 text-[#2271b1]" />
+                  </div>
+                  <p className="mt-3 text-2xl font-extrabold text-slate-900">{data?.totalPages ?? 1}</p>
+                  <p className="mt-1 text-xs text-slate-500">Total pages in this result set</p>
+                </div>
+
+                <div className="wp-stat-card rounded-2xl p-4">
+                  <div className="flex items-start justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Filters Applied</p>
+                    <FiFilter className="h-4 w-4 text-[#2271b1]" />
+                  </div>
+                  <p className="mt-3 text-2xl font-extrabold text-slate-900">{activeFiltersCount}</p>
+                  <p className="mt-1 text-xs text-slate-500">Focused catalog constraints</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {isDbDown && (
-            <Alert className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 rounded-2xl">
-              <FiAlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <AlertDescription className="text-amber-800 dark:text-amber-200">
-                Database is currently offline. Viewing cached session data.
+            <Alert className="wp-card animate-rise-delay-1 rounded-2xl border-amber-200 bg-amber-50/95 text-amber-900">
+              <FiAlertCircle className="h-4 w-4 text-amber-700" />
+              <AlertDescription className="text-amber-800">
+                Database is currently offline. You are viewing cached session data.
               </AlertDescription>
             </Alert>
           )}
 
-          {/* Search & Actions Bar */}
-          <div className="sticky top-0 z-20 space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-8 flex gap-3">
-                <div className="relative flex-1 group">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                    <FiSearch className="w-5 h-5 text-zinc-400 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" />
-                  </div>
-                  <SearchBar 
-                    onSearch={handleSearch} 
-                    className="w-full h-14 pl-12 pr-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm focus:ring-2 focus:ring-zinc-900/5 dark:focus:ring-white/5 transition-all text-lg font-medium" 
+          <section className="animate-rise-delay-1 space-y-4">
+            <Card className="wp-card rounded-3xl p-4 md:p-5">
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-12">
+                <div className="flex flex-col gap-3 sm:flex-row xl:col-span-8">
+                  <SearchBar
+                    onSearch={handleSearch}
+                    className="w-full"
+                    inputClassName="h-12 rounded-xl border-slate-300 bg-white/90 text-slate-800 shadow-sm placeholder:text-slate-400 focus:ring-2 focus:ring-[#2271b1]/30"
                   />
-                </div>
-                <Button 
-                  onClick={() => setShowFilters(!showFilters)}
-                  variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"}
-                  className={`h-14 px-6 rounded-2xl gap-2 font-bold transition-all ${
-                    showFilters || activeFiltersCount > 0 
-                      ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" 
-                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600"
-                  }`}
-                >
-                  <FiFilter className="w-5 h-5" />
-                  Filters
-                  {activeFiltersCount > 0 && (
-                    <Badge className="ml-1 bg-amber-500 text-white rounded-full px-1.5 min-w-[20px] h-5">
-                      {activeFiltersCount}
-                    </Badge>
-                  )}
-                  <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
-                </Button>
-              </div>
 
-              <div className="lg:col-span-4">
-                <div className="h-14 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center px-4 gap-4 shadow-sm">
-                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-tighter whitespace-nowrap">Sort by</span>
-                  <select 
-                    value={sort} 
-                    onChange={(e) => setSort(e.target.value as any)}
-                    className="flex-1 bg-transparent text-sm font-semibold text-zinc-900 dark:text-white outline-none cursor-pointer"
+                  <Button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`h-12 rounded-xl px-5 font-semibold transition-all ${
+                      showFilters || activeFiltersCount > 0
+                        ? 'border border-[#135e96] bg-[#2271b1] text-white hover:bg-[#135e96]'
+                        : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
                   >
-                    <option value="id_desc">Recently Added</option>
-                    <option value="id_asc">Oldest Entries</option>
-                    <option value="scraped_at_desc">Scrape Date (New)</option>
-                    <option value="scraped_at_asc">Scrape Date (Old)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Expandable Filters Overlay */}
-            {showFilters && (
-              <Card className="p-6 rounded-3xl border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl shadow-2xl animate-in fade-in slide-in-from-top-4">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    Refine Results
-                  </h3>
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs font-bold text-zinc-500 hover:text-red-500">
-                    <FilterX className="w-3.5 h-3.5 mr-1.5" />
-                    Reset All
+                    <FiFilter className="mr-2 h-4 w-4" />
+                    Filters
+                    {activeFiltersCount > 0 && (
+                      <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold text-inherit">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                    <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
                   </Button>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase flex items-center gap-1.5">
-                      <FiTag className="w-3 h-3 text-amber-500" /> Brand
-                    </label>
-                    <SearchableSelect
-                      options={[{ label: 'All Brands', value: '__all' }, ...(brandsData?.data || []).map(b => ({ label: b, value: b }))]}
-                      value={brandFilter ?? '__all'}
-                      onValueChange={(v) => { setBrandFilter(v === '__all' ? null : v); setPage(1); }}
-                      placeholder="All Brands"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase flex items-center gap-1.5">
-                      <FiMapPin className="w-3 h-3 text-blue-500" /> Region
-                    </label>
-                    <SearchableSelect
-                      options={[{ label: 'All Regions', value: '__all' }, ...(regionsData?.data || []).map(r => ({ label: r, value: r }))]}
-                      value={regionFilter ?? '__all'}
-                      onValueChange={(v) => { setRegionFilter(v === '__all' ? null : v); setPage(1); }}
-                      placeholder="All Regions"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase flex items-center gap-1.5">
-                      <FiLayers className="w-3 h-3 text-emerald-500" /> Country
-                    </label>
-                    <SearchableSelect
-                      options={[{ label: 'All Countries', value: '__all' }, ...(countriesData?.data || []).map(c => ({ label: c, value: c }))]}
-                      value={countryFilter ?? '__all'}
-                      onValueChange={(v) => { setCountryFilter(v === '__all' ? null : v); setPage(1); }}
-                      placeholder="All Countries"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase flex items-center gap-1.5">
-                      <BarChart3 className="w-3 h-3 text-purple-500" /> Category
-                    </label>
-                    <SearchableSelect
-                      options={[{ label: 'All Categories', value: '__all' }, ...(categoriesData?.data || []).map(c => ({ label: c, value: c }))]}
-                      value={categoryFilter ?? '__all'}
-                      onValueChange={(v) => { setCategoryFilter(v === '__all' ? null : v); setPage(1); }}
-                      placeholder="All Categories"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase flex items-center gap-1.5">
-                      <FiDatabase className="w-3 h-3 text-pink-500" /> Distillery
-                    </label>
-                    <SearchableSelect
-                      options={[{ label: 'All Distilleries', value: '__all' }, ...(distilleriesData?.data || []).map(d => ({ label: d, value: d }))]}
-                      value={distilleryFilter ?? '__all'}
-                      onValueChange={(v) => { setDistilleryFilter(v === '__all' ? null : v); setPage(1); }}
-                      placeholder="All Distilleries"
-                    />
+
+                <div className="xl:col-span-4">
+                  <div className="flex h-12 items-center gap-3 rounded-xl border border-slate-300 bg-white/90 px-4 shadow-sm">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Sort</span>
+                    <select
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value as any)}
+                      className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                    >
+                      <option value="id_desc">Recently Added</option>
+                      <option value="id_asc">Oldest Entries</option>
+                      <option value="scraped_at_desc">Scrape Date (New)</option>
+                      <option value="scraped_at_asc">Scrape Date (Old)</option>
+                    </select>
                   </div>
                 </div>
-              </Card>
-            )}
-          </div>
+              </div>
 
-          {/* Main Content Area */}
-          <Card className="rounded-[2.5rem] border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl shadow-zinc-200/50 dark:shadow-none overflow-hidden">
-             <WineTable
-                wines={data?.data || []}
-                isLoading={isLoading}
-                onEdit={handleEditClick}
-                onDelete={handleDeleteWine}
-                currentPage={page}
-                totalPages={data?.totalPages || 1}
-                onPageChange={setPage}
-              />
-          </Card>
+              {showFilters && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300 rounded-2xl border border-slate-200 bg-[#f7fafd] p-4 md:p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      <Sparkles className="h-4 w-4 text-[#2271b1]" />
+                      Refine Results
+                    </h3>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="h-8 text-xs font-semibold text-slate-600 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <FilterX className="mr-1.5 h-3.5 w-3.5" />
+                      Reset All
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <FiTag className="h-3.5 w-3.5 text-[#2271b1]" />
+                        Brand
+                      </label>
+                      <SearchableSelect
+                        options={[{ label: 'All Brands', value: '__all' }, ...(brandsData?.data || []).map((b) => ({ label: b, value: b }))]}
+                        value={brandFilter ?? '__all'}
+                        onValueChange={(v) => { setBrandFilter(v === '__all' ? null : v); setPage(1); }}
+                        placeholder="All Brands"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <FiMapPin className="h-3.5 w-3.5 text-[#2271b1]" />
+                        Region
+                      </label>
+                      <SearchableSelect
+                        options={[{ label: 'All Regions', value: '__all' }, ...(regionsData?.data || []).map((r) => ({ label: r, value: r }))]}
+                        value={regionFilter ?? '__all'}
+                        onValueChange={(v) => { setRegionFilter(v === '__all' ? null : v); setPage(1); }}
+                        placeholder="All Regions"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <FiLayers className="h-3.5 w-3.5 text-[#2271b1]" />
+                        Country
+                      </label>
+                      <SearchableSelect
+                        options={[{ label: 'All Countries', value: '__all' }, ...(countriesData?.data || []).map((c) => ({ label: c, value: c }))]}
+                        value={countryFilter ?? '__all'}
+                        onValueChange={(v) => { setCountryFilter(v === '__all' ? null : v); setPage(1); }}
+                        placeholder="All Countries"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <BarChart3 className="h-3.5 w-3.5 text-[#2271b1]" />
+                        Category
+                      </label>
+                      <SearchableSelect
+                        options={[{ label: 'All Categories', value: '__all' }, ...(categoriesData?.data || []).map((c) => ({ label: c, value: c }))]}
+                        value={categoryFilter ?? '__all'}
+                        onValueChange={(v) => { setCategoryFilter(v === '__all' ? null : v); setPage(1); }}
+                        placeholder="All Categories"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <FiDatabase className="h-3.5 w-3.5 text-[#2271b1]" />
+                        Distillery
+                      </label>
+                      <SearchableSelect
+                        options={[{ label: 'All Distilleries', value: '__all' }, ...(distilleriesData?.data || []).map((d) => ({ label: d, value: d }))]}
+                        value={distilleryFilter ?? '__all'}
+                        onValueChange={(v) => { setDistilleryFilter(v === '__all' ? null : v); setPage(1); }}
+                        placeholder="All Distilleries"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </section>
+
+          <section className="wp-card animate-rise-delay-2 overflow-hidden rounded-[28px] p-2">
+            <WineTable
+              wines={data?.data || []}
+              isLoading={isLoading}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteWine}
+              currentPage={page}
+              totalPages={data?.totalPages || 1}
+              onPageChange={setPage}
+            />
+          </section>
         </div>
       </div>
 

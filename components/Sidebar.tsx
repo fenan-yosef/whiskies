@@ -10,6 +10,7 @@ import {
 import { 
   Wine as WineIcon, 
   ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -21,78 +22,75 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-72 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 z-40 flex flex-col shadow-2xl shadow-zinc-200/50 dark:shadow-none">
-      {/* Brand Section */}
-      <div className="p-8">
-        <div className="flex items-center gap-4 group cursor-pointer">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-900 dark:bg-white flex items-center justify-center text-xl font-black text-white dark:text-zinc-900 transform group-hover:rotate-12 transition-transform duration-300 shadow-xl shadow-zinc-200 dark:shadow-none">
-            <WineIcon className="w-6 h-6" />
+    <aside className="wp-sidebar fixed left-0 top-0 z-40 flex h-screen w-72 flex-col border-r border-white/10 shadow-2xl shadow-black/40">
+      <div className="border-b border-white/10 px-6 pb-5 pt-6">
+        <div className="animate-rise flex items-center gap-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2271b1] text-white shadow-lg shadow-blue-900/40">
+            <WineIcon className="h-5 w-5" />
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-black text-zinc-900 dark:text-white leading-none tracking-tight">VINTAGE</h1>
-            <span className="text-[10px] font-bold text-amber-500 uppercase tracking-[0.2em] mt-1">Reserve Manager</span>
+          <div>
+            <p className="wp-heading text-lg font-semibold text-white">CaskPress</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#72aee6]">Client Edition</p>
           </div>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-medium text-zinc-300">
+          Premium CMS styling tuned for agency-friendly demos.
         </div>
       </div>
 
-      {/* Main Navigation */}
-      <ScrollArea className="flex-1 px-4">
-        <div className="space-y-8 py-4">
-          
-          {/* Main Menu */}
-          <div>
-            <h2 className="px-4 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Main Menu</h2>
-            <nav className="space-y-1">
-              {menuItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group ${
-                      isActive 
-                        ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 shadow-lg shadow-zinc-200 dark:shadow-none" 
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <item.icon className={`w-5 h-5 ${isActive ? 'text-amber-500' : 'group-hover:text-zinc-900 dark:group-hover:text-white'}`} />
-                      <span className="text-sm font-bold tracking-tight">{item.name}</span>
-                    </div>
-                    {isActive && <ChevronRight className="w-4 h-4 opacity-50" />}
-                  </Link>
-                );
-              })}
-            </nav>
+      <div className="flex-1 overflow-y-auto px-3 py-5">
+        <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Navigation</p>
+        <nav className="mt-3 space-y-2">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`wp-side-link group flex items-center justify-between rounded-xl px-3.5 py-3 ${
+                  isActive ? 'wp-side-link-active' : ''
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <item.icon className={`h-[18px] w-[18px] ${isActive ? 'text-[#72aee6]' : 'text-zinc-400 group-hover:text-white'}`} />
+                  <span className="text-sm font-semibold">{item.name}</span>
+                </span>
+                <ChevronRight className={`h-4 w-4 transition-transform ${isActive ? 'translate-x-0 text-[#72aee6]' : '-translate-x-1 text-zinc-600 group-hover:translate-x-0 group-hover:text-zinc-300'}`} />
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4 animate-rise-delay-1">
+          <div className="flex items-center gap-2 text-zinc-200">
+            <ShieldCheck className="h-4 w-4 text-[#72aee6]" />
+            <p className="text-xs font-semibold uppercase tracking-wider">Trust Layer</p>
           </div>
-
-          {/* removed Quick Access and Admin sections per user request */}
-
+          <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+            Interface follows familiar enterprise CMS behavior to increase client confidence during review calls.
+          </p>
         </div>
-      </ScrollArea>
+      </div>
 
-      {/* User Profile / Status */}
-      <div className="p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-        <div className="flex items-center gap-4 mb-6">
-           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-white dark:border-zinc-800 shadow-md flex items-center justify-center text-white font-black text-xs">
-              AD
-           </div>
-           <div className="flex flex-col">
-              <span className="text-sm font-black text-zinc-900 dark:text-white leading-tight">Admin User</span>
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">System Overseer</span>
-           </div>
+      <div className="border-t border-white/10 p-4">
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#2271b1] to-[#135e96] text-xs font-bold text-white">
+            AD
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-white">Admin User</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">Publisher</p>
+          </div>
         </div>
-        <button className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/30 transition-all font-bold text-sm">
-          <FiLogOut className="w-4 h-4" />
+
+        <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/20">
+          <FiLogOut className="h-4 w-4" />
           <span>Exit Session</span>
         </button>
       </div>
     </aside>
   );
-}
-
-// Minimal ScrollArea component since we don't have it imported or need it complex
-function ScrollArea({ children, className }: { children: React.ReactNode, className?: string }) {
-  return <div className={`overflow-y-auto ${className}`}>{children}</div>;
 }
 
