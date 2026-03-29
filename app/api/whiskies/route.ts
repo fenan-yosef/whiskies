@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import pool, { query } from '../../../lib/db';
+import { query } from '../../../lib/db';
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const q = url.searchParams.get('q') || '';
+    const q = (url.searchParams.get('q') || '').trim();
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limitParam = parseInt(url.searchParams.get('limit') || '25', 10);
     const limit = Math.min(Math.max(limitParam || 25, 1), 200);
@@ -14,14 +14,12 @@ export async function GET(req: Request) {
     const sortBy = ['id', 'scraped_at'].includes(sortByParam) ? sortByParam : 'id';
     const sortOrder = sortOrderParam === 'desc' ? 'DESC' : 'ASC';
     const orderClause = `ORDER BY ${sortBy} ${sortOrder}, id ${sortOrder}`;
+    const hasImages = url.searchParams.get('has_images') === '1';
+    const hasReviews = url.searchParams.get('has_reviews') === '1';
 
-    let rows;
-    let total;
-    let total_rows: number | null = null;
-    let total_distinct_urls: number | null = null;
-    let total_with_image: number | null = null;
-    let min_id: number | null = null;
-    let max_id: number | null = null;
+    const whereParts: string[] = [];
+    const whereParams: any[] = [];
+
     if (q) {
       // detect which searchable columns exist in the current DB/schema
       const dbName = process.env.DB_NAME || 'whisky_db';
@@ -35,70 +33,74 @@ export async function GET(req: Request) {
 
       // if none of the expected columns exist, return empty result set
       if (searchCols.length === 0) {
-        return NextResponse.json({ success: true, data: [], total: 0, totalPages: 0, page, limit });
+        return NextResponse.json({
+          success: true,
+          data: [],
+          total: 0,
+          total_rows: 0,
+          total_distinct_urls: 0,
+          total_with_image: 0,
+          min_id: null,
+          max_id: null,
+          sortBy,
+          sortOrder: sortOrder.toLowerCase(),
+          page,
+          limit,
+          totalPages: 0,
+          has_images: hasImages,
+          has_reviews: hasReviews,
+        });
       }
 
       // build a safe regex pattern from the query: escape regex chars, allow spaces to act like '.*'
       const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
       const pattern = `(?i)${escapeRegex(q).replace(/\s+/g, '.*')}`; // (?i) for case-insensitive (MySQL 8+)
-      // build WHERE clause dynamically using only the available columns
-      const whereParts = searchCols.map((c) => `${c} REGEXP ?`).join(' OR ');
-      const params = Array(searchCols.length).fill(pattern);
-
-      // additional exact filter params supported by UI
-      const filterCandidates = ['brand','category','region','country','distillery','style','vintage','age_years','bottling_year'];
-      const filterParts: string[] = [];
-      const filterParams: any[] = [];
-      for (const f of filterCandidates) {
-        const v = url.searchParams.get(f);
-        if (v) {
-          filterParts.push(`${f} = ?`);
-          filterParams.push(v);
-        }
-      }
-
-      const combinedWhere = filterParts.length > 0 ? `(${whereParts}) AND (${filterParts.join(' AND ')})` : whereParts;
-      const combinedParams = filterParts.length > 0 ? params.concat(filterParams) : params;
-
-      const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products WHERE ${combinedWhere}`, combinedParams) as any;
-      total = totalRow.count;
-      // additional debug counts for filtered set
-      const [rowsCount] = await query(`SELECT COUNT(*) as count FROM wine_products WHERE ${combinedWhere}`, combinedParams) as any;
-      total_rows = rowsCount.count;
-      const [distinctCount] = await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products WHERE ${combinedWhere}`, combinedParams) as any;
-      total_distinct_urls = distinctCount.count;
-      const [withImageCount] = await query(
-        `SELECT COUNT(*) as count FROM wine_products wp WHERE (${combinedWhere}) AND ((wp.image_url IS NOT NULL AND wp.image_url <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wp.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND i.url <> ''))))`,
-        combinedParams
-      ) as any;
-      total_with_image = withImageCount.count;
-      const [idRange] = await query(
-        `SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products WHERE ${combinedWhere}`,
-        combinedParams
-      ) as any;
-      min_id = idRange.min_id;
-      max_id = idRange.max_id;
-      // LIMIT/OFFSET cannot always be used as prepared-statement params on some MySQL setups
-      const safeLimit = Number(limit) || 25;
-      const safeOffset = Number(offset) || 0;
-      rows = await query(`SELECT * FROM wine_products WHERE ${combinedWhere} ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`, combinedParams);
-    } else {
-      const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products`) as any;
-      total = totalRow.count;
-      // global additional counts
-      const [totalRowsRow] = await query(`SELECT COUNT(*) as count FROM wine_products`) as any;
-      total_rows = totalRowsRow.count;
-      const [distinctCount] = await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products`) as any;
-      total_distinct_urls = distinctCount.count;
-      const [withImageCount] = await query(`SELECT COUNT(*) as count FROM wine_products wp WHERE (wp.image_url IS NOT NULL AND wp.image_url <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wp.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND i.url <> '')))` ) as any;
-      total_with_image = withImageCount.count;
-      const [idRange] = await query(`SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products`) as any;
-      min_id = idRange.min_id;
-      max_id = idRange.max_id;
-      const safeLimit = Number(limit) || 25;
-      const safeOffset = Number(offset) || 0;
-      rows = await query(`SELECT * FROM wine_products ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`);
+      whereParts.push(`(${searchCols.map((c) => `${c} REGEXP ?`).join(' OR ')})`);
+      whereParams.push(...Array(searchCols.length).fill(pattern));
     }
+
+    // exact-match filters from UI
+    const filterCandidates = ['brand', 'category', 'region', 'country', 'distillery', 'style', 'vintage', 'age_years', 'bottling_year'];
+    for (const f of filterCandidates) {
+      const v = url.searchParams.get(f);
+      if (v) {
+        whereParts.push(`${f} = ?`);
+        whereParams.push(v);
+      }
+    }
+
+    if (hasImages) {
+      whereParts.push(`((wine_products.image_url IS NOT NULL AND TRIM(wine_products.image_url) <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wine_products.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND TRIM(i.url) <> ''))))`);
+    }
+
+    if (hasReviews) {
+      whereParts.push(`EXISTS (SELECT 1 FROM wine_product_reviews r WHERE r.product_id = wine_products.id)`);
+    }
+
+    const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
+    const withImageCondition = `((wine_products.image_url IS NOT NULL AND TRIM(wine_products.image_url) <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wine_products.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND TRIM(i.url) <> ''))))`;
+    const withImageWhere = whereClause ? `${whereClause} AND ${withImageCondition}` : `WHERE ${withImageCondition}`;
+
+    const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams) as any[];
+    const total = Number(totalRow?.count || 0);
+
+    const [rowsCount] = await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams) as any[];
+    const total_rows = Number(rowsCount?.count || 0);
+
+    const [distinctCount] = await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products ${whereClause}`, whereParams) as any[];
+    const total_distinct_urls = Number(distinctCount?.count || 0);
+
+    const [withImageCount] = await query(`SELECT COUNT(*) as count FROM wine_products ${withImageWhere}`, whereParams) as any[];
+    const total_with_image = Number(withImageCount?.count || 0);
+
+    const [idRange] = await query(`SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products ${whereClause}`, whereParams) as any[];
+    const min_id = idRange?.min_id ?? null;
+    const max_id = idRange?.max_id ?? null;
+
+    // LIMIT/OFFSET cannot always be used as prepared-statement params on some MySQL setups
+    const safeLimit = Number(limit) || 25;
+    const safeOffset = Number(offset) || 0;
+    const rows = await query(`SELECT * FROM wine_products ${whereClause} ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`, whereParams);
 
     return NextResponse.json({
       success: true,
@@ -114,6 +116,8 @@ export async function GET(req: Request) {
       page,
       limit,
       totalPages: Math.ceil(Number(total || 0) / Number(limit || 25)),
+      has_images: hasImages,
+      has_reviews: hasReviews,
     });
   } catch (err) {
     // eslint-disable-next-line no-console

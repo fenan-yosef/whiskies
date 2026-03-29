@@ -67,6 +67,8 @@ export default function Dashboard() {
   const [countryFilter, setCountryFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [distilleryFilter, setDistilleryFilter] = useState<string | null>(null);
+  const [hasImagesFilter, setHasImagesFilter] = useState(false);
+  const [hasReviewsFilter, setHasReviewsFilter] = useState(false);
 
   // load filter options
   const { data: brandsData } = useSWR<FilterResponse>('/api/whiskies/filters?field=brand', fetcher);
@@ -99,8 +101,10 @@ export default function Dashboard() {
     if (countryFilter) p.append('country', countryFilter);
     if (categoryFilter) p.append('category', categoryFilter);
     if (distilleryFilter) p.append('distillery', distilleryFilter);
+    if (hasImagesFilter) p.append('has_images', '1');
+    if (hasReviewsFilter) p.append('has_reviews', '1');
     return p;
-  }, [search, page, sort, brandFilter, regionFilter, countryFilter, categoryFilter, distilleryFilter]);
+  }, [search, page, sort, brandFilter, regionFilter, countryFilter, categoryFilter, distilleryFilter, hasImagesFilter, hasReviewsFilter]);
 
   const { data, isLoading, mutate } = useSWR<ApiResponse>(
     `/api/whiskies?${queryParams.toString()}`,
@@ -130,6 +134,8 @@ export default function Dashboard() {
     setCountryFilter(null);
     setCategoryFilter(null);
     setDistilleryFilter(null);
+    setHasImagesFilter(false);
+    setHasReviewsFilter(false);
     setSearch('');
     setPage(1);
   };
@@ -198,7 +204,7 @@ export default function Dashboard() {
   };
 
   const isDbDown = data?.error && data?.usingMockData;
-  const activeFiltersCount = [brandFilter, regionFilter, countryFilter, categoryFilter, distilleryFilter].filter(Boolean).length;
+  const activeFiltersCount = [brandFilter, regionFilter, countryFilter, categoryFilter, distilleryFilter].filter(Boolean).length + Number(hasImagesFilter) + Number(hasReviewsFilter);
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-hidden">
@@ -343,7 +349,10 @@ export default function Dashboard() {
                     <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Sort</span>
                     <select
                       value={sort}
-                      onChange={(e) => setSort(e.target.value as any)}
+                      onChange={(e) => {
+                        setSort(e.target.value as any);
+                        setPage(1);
+                      }}
                       className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
                     >
                       <option value="id_desc">Recently Added</option>
@@ -374,7 +383,7 @@ export default function Dashboard() {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-7">
                     <div className="space-y-1.5">
                       <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                         <FiTag className="h-3.5 w-3.5 text-[#2271b1]" />
@@ -437,6 +446,44 @@ export default function Dashboard() {
                         value={distilleryFilter ?? '__all'}
                         onValueChange={(v) => { setDistilleryFilter(v === '__all' ? null : v); setPage(1); }}
                         placeholder="All Distilleries"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <FiLayers className="h-3.5 w-3.5 text-[#2271b1]" />
+                        Has Images
+                      </label>
+                      <SearchableSelect
+                        options={[
+                          { label: 'All products', value: '__all' },
+                          { label: 'Only with images', value: 'only' },
+                        ]}
+                        value={hasImagesFilter ? 'only' : '__all'}
+                        onValueChange={(v) => {
+                          setHasImagesFilter(v === 'only');
+                          setPage(1);
+                        }}
+                        placeholder="All products"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        <FiFilter className="h-3.5 w-3.5 text-[#2271b1]" />
+                        Has Reviews
+                      </label>
+                      <SearchableSelect
+                        options={[
+                          { label: 'All products', value: '__all' },
+                          { label: 'Only with reviews', value: 'only' },
+                        ]}
+                        value={hasReviewsFilter ? 'only' : '__all'}
+                        onValueChange={(v) => {
+                          setHasReviewsFilter(v === 'only');
+                          setPage(1);
+                        }}
+                        placeholder="All products"
                       />
                     </div>
                   </div>

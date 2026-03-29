@@ -29,7 +29,7 @@ export default function Sidebar() {
             <WineIcon className="h-5 w-5" />
           </div>
           <div>
-            <p className="wp-heading text-lg font-semibold text-white">CaskPress</p>
+            <p className="wp-heading text-lg font-semibold text-white">WHISKIES DB INSPECTOR</p>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#72aee6]">Client Edition</p>
           </div>
         </div>

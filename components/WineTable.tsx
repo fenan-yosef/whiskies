@@ -35,13 +35,11 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  // default display: newest (highest id) first
-  const sortedWines = [...wines].sort((a, b) => b.id - a.id);
   const [imagesModalWine, setImagesModalWine] = useState<Wine | null>(null);
   const [imagesModalOpen, setImagesModalOpen] = useState(false);
   const [reviewsModalWine, setReviewsModalWine] = useState<Wine | null>(null);
   const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<string | null>('id');
+  const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const handleSort = (col: string) => {
@@ -79,9 +77,9 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
   };
 
   const displayedWines = useMemo(() => {
-    if (!sortBy) return sortedWines;
+    if (!sortBy) return wines;
     const accessor = getAccessor(sortBy);
-    const arr = [...sortedWines];
+    const arr = [...wines];
     arr.sort((a, b) => {
       const va = accessor(a);
       const vb = accessor(b);
@@ -95,7 +93,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
       return 0;
     });
     return arr;
-  }, [sortedWines, sortBy, sortDir]);
+  }, [wines, sortBy, sortDir]);
 
   const handleDeleteConfirm = async () => {
     if (deleteId === null) return;
