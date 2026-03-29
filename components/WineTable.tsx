@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FiGrid, FiList } from 'react-icons/fi';
 import { Wine } from '@/lib/mockData';
 import WineImagesModal from './WineImagesModal';
+import ReviewsModal from './ReviewsModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +38,8 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
   const sortedWines = [...wines].sort((a, b) => b.id - a.id);
   const [imagesModalWine, setImagesModalWine] = useState<Wine | null>(null);
   const [imagesModalOpen, setImagesModalOpen] = useState(false);
+  const [reviewsModalWine, setReviewsModalWine] = useState<Wine | null>(null);
+  const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<string | null>('id');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -206,6 +209,9 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                         <Button size="sm" onClick={() => { setImagesModalWine(wine); setImagesModalOpen(true); }}>
                           View
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setReviewsModalWine(wine); setReviewsModalOpen(true); }}>
+                          Reviews
+                        </Button>
                       </div>
                     </TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400 max-w-xs truncate">
@@ -265,6 +271,9 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                         <Button size="sm" onClick={() => { setImagesModalWine(w); setImagesModalOpen(true); }} className="h-8">
                           View Images
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => { setReviewsModalWine(w); setReviewsModalOpen(true); }} className="h-8">
+                          Reviews
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -283,6 +292,15 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
         onOpenChange={(open) => {
           if (!open) setImagesModalWine(null);
           setImagesModalOpen(open);
+        }}
+      />
+
+      <ReviewsModal
+        productId={reviewsModalWine?.id ?? null}
+        open={reviewsModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setReviewsModalWine(null);
+          setReviewsModalOpen(open);
         }}
       />
 
