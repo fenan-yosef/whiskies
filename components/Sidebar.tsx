@@ -18,7 +18,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: FiHome },
-    { name: 'Analytics', href: '/analytics', icon: FiBarChart2 },
+    // { name: 'Analytics', href: '/analytics', icon: FiBarChart2 },
   ];
 
   return (
