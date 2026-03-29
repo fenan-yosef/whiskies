@@ -258,9 +258,9 @@ export default function AnalyticsPage() {
                 <h1 className="wp-heading mt-2 text-3xl font-semibold leading-tight text-slate-900 md:text-4xl">
                   Client-Ready Analytics Command Deck
                 </h1>
-                <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
+                {/* <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
                   A visually rich reporting surface designed to look familiar to WordPress-loving stakeholders while staying meaningful for analysts.
-                </p>
+                </p> */}
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Badge className="border border-blue-200 bg-blue-50 text-[#135e96]">

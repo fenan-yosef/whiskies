@@ -211,7 +211,7 @@ export default function Dashboard() {
             <span className="text-slate-900">Inventory</span>
           </div>
           <Badge className="hidden border border-[#2271b1]/30 bg-[#2271b1]/10 text-[11px] font-semibold text-[#135e96] sm:inline-flex">
-            WordPress-Pro Experience
+            Whiskies
           </Badge>
         </div>
 
@@ -244,7 +244,7 @@ export default function Dashboard() {
                   Whisky Inventory Command Center
                 </h1>
                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
-                  A polished, client-comfortable CMS interface with richer visual hierarchy, smoother motion, and focused inventory controls.
+                  A polished, client-comfortable CMS interface with richer visual hierarchy, smoother motion, and focused inventory controls from Online-dimensions.
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-2">

@@ -63,7 +63,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4 animate-rise-delay-1">
+        {/* <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4 animate-rise-delay-1">
           <div className="flex items-center gap-2 text-zinc-200">
             <ShieldCheck className="h-4 w-4 text-[#72aee6]" />
             <p className="text-xs font-semibold uppercase tracking-wider">Trust Layer</p>
@@ -71,7 +71,7 @@ export default function Sidebar() {
           <p className="mt-2 text-xs leading-relaxed text-zinc-400">
             Interface follows familiar enterprise CMS behavior to increase client confidence during review calls.
           </p>
-        </div>
+        </div> */}
       </div>
 
       <div className="border-t border-white/10 p-4">
