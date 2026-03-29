@@ -8,9 +8,10 @@ import { FiSearch, FiX } from 'react-icons/fi';
 interface SearchBarProps {
   onSearch: (query: string) => void;
   isLoading?: boolean;
+  className?: string;
 }
 
-export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
+export default function SearchBar({ onSearch, isLoading, className }: SearchBarProps) {
   const [query, setQuery] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,7 +26,7 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
   };
 
   return (
-    <div className="relative flex items-center">
+    <div className={`relative flex items-center ${className ?? ''}`}>
       <FiSearch className="absolute left-3 w-5 h-5 text-zinc-400 pointer-events-none" />
       <input
         type="text"

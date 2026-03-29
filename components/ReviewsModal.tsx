@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Star, MessageSquare, ThumbsUp, Calendar, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ReviewRecord {
@@ -21,11 +24,30 @@ interface ReviewRecord {
 
 interface Props {
   productId: number | null;
+  productName?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export default function ReviewsModal({ productId, open, onOpenChange }: Props) {
+const StarRating = ({ rating, max = 5 }: { rating: number; max?: number }) => {
+  const normalized = (rating / max) * 5;
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star
+          key={s}
+          className={`w-4 h-4 ${
+            s <= Math.round(normalized)
+              ? 'fill-amber-400 text-amber-400'
+              : 'fill-zinc-200 text-zinc-200 dark:fill-zinc-800 dark:text-zinc-800'
+          }`}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default function ReviewsModal({ productId, productName, open, onOpenChange }: Props) {
   const [reviews, setReviews] = useState<ReviewRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -63,54 +85,119 @@ export default function ReviewsModal({ productId, open, onOpenChange }: Props) {
     return () => { mounted = false; };
   }, [open, productId]);
 
-  const handleClose = () => onOpenChange(false);
+  const stats = React.useMemo(() => {
+    if (!reviews.length) return null;
+    const avg = reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length;
+    const verified = reviews.filter(r => r.is_verified_purchase).length;
+    return { avg, verified };
+  }, [reviews]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Reviews</DialogTitle>
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden bg-zinc-50/50 dark:bg-zinc-950/50 backdrop-blur-xl border-zinc-200 dark:border-zinc-800 shadow-2xl">
+        <DialogHeader className="p-6 pb-4 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/50 dark:bg-zinc-900/50">
+          <div className="flex flex-col gap-1">
+            <DialogTitle className="text-2xl font-bold tracking-tight bg-gradient-to-br from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
+              {productName || 'Product Reviews'}
+            </DialogTitle>
+            <div className="flex items-center gap-4 text-sm text-zinc-500">
+              {stats && (
+                <>
+                  <div className="flex items-center gap-1.5 font-medium text-amber-600 dark:text-amber-400">
+                    <StarRating rating={stats.avg} />
+                    <span className="ml-1 leading-none">{stats.avg.toFixed(1)} Rating</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4" />
+                    <span>{reviews.length} total reviews</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="p-4">
-          {loading ? (
-            <div className="text-center py-8 text-zinc-500 animate-pulse">Loading reviews...</div>
-          ) : (
-            (() => {
-              if (!reviews || reviews.length === 0) {
-                return <div className="text-center py-12 bg-zinc-50 dark:bg-zinc-900 rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-                  <p className="text-zinc-500">No reviews available for this product.</p>
-                </div>;
-              }
-
-              return (
-                <div className="space-y-4">
-                  {reviews.map((r) => (
-                    <div key={r.id} className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="font-semibold text-zinc-900 dark:text-white">{r.reviewer || 'Anonymous'}</div>
-                          <div className="text-sm text-zinc-600 dark:text-zinc-400">{r.review_date || r.scraped_at || ''}</div>
+        <ScrollArea className="flex-1 px-6">
+          <div className="py-6 space-y-6">
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-32 rounded-2xl bg-zinc-200/50 dark:bg-zinc-800/50 animate-pulse" />
+                ))}
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-400">
+                  <MessageSquare className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">No reviews yet</h3>
+                  <p className="text-zinc-500 max-w-xs mx-auto">Be the first to share your thoughts on this product or check back later.</p>
+                </div>
+              </div>
+            ) : (
+              reviews.map((r, idx) => (
+                <div 
+                  key={r.id} 
+                  className="group relative flex flex-col p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/50 hover:border-amber-500/30 hover:shadow-lg transition-all duration-300"
+                  style={{ animationDelay: `${idx * 50}ms` }}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center font-bold text-zinc-600 dark:text-zinc-400">
+                        {(r.reviewer || 'A')[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                          {r.reviewer || 'Anonymous'}
+                          {r.is_verified_purchase === 1 && (
+                            <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-none text-[10px] font-bold px-1.5 py-0 uppercase">
+                              <ShoppingBag className="w-2.5 h-2.5 mr-1" />
+                              Verified
+                            </Badge>
+                          )}
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm text-zinc-600 dark:text-zinc-400">Rating: {r.rating != null ? `${r.rating}${r.rating_max ? `/${r.rating_max}` : '/5'}` : 'N/A'}</div>
-                          {r.is_verified_purchase ? <div className="mt-1 text-xs inline-block px-2 py-0.5 bg-green-100 text-green-800 rounded">Verified</div> : null}
+                        <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+                          <Calendar className="w-3 h-3" />
+                          {r.review_date || (r.scraped_at ? new Date(r.scraped_at).toLocaleDateString() : 'N/A')}
                         </div>
                       </div>
-                      <p className="mt-3 text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-line">{r.review_text || ''}</p>
-                      <div className="mt-3 text-xs text-zinc-500">Source: {r.source || 'unknown'} • Helpful: {r.helpful_votes ?? 0}</div>
                     </div>
-                  ))}
-                </div>
-              );
-            })()
-          )}
-        </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <StarRating rating={r.rating ?? 0} max={r.rating_max ?? 5} />
+                      <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">{r.source || 'Direct'}</span>
+                    </div>
+                  </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>Close</Button>
+                  <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-sm italic relative">
+                    <span className="text-4xl absolute -top-4 -left-2 text-zinc-100 dark:text-zinc-800 select-none font-serif opacity-50">"</span>
+                    {r.review_text || 'No review content provided.'}
+                  </p>
+
+                  <div className="mt-6 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-xs">
+                      <button className="flex items-center gap-1.5 text-zinc-500 hover:text-amber-600 transition-colors group/btn">
+                        <ThumbsUp className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
+                        <span className="font-medium">{r.helpful_votes ?? 0}</span>
+                      </button>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] font-medium border-zinc-200 dark:border-zinc-800 text-zinc-400">
+                      ID: {r.id}
+                    </Badge>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="p-4 border-t border-zinc-200/50 dark:border-zinc-800/50 bg-white/50 dark:bg-zinc-900/50">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-xl font-semibold px-8 text-zinc-600 dark:text-zinc-400">
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+

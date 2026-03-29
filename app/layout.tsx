@@ -39,11 +39,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans antialiased`}>
+      <body className={`font-sans antialiased text-zinc-900 dark:text-zinc-50`}>
         <div className="flex h-screen bg-white dark:bg-zinc-950">
           <Sidebar />
 
-          <main className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+          <main className="flex-1 ml-72 flex flex-col h-screen overflow-hidden">
             {children}
           </main>
         </div>

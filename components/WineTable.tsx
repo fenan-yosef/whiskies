@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FiGrid, FiList } from 'react-icons/fi';
+import { MessageSquare, Image as ImageIcon } from 'lucide-react';
 import { Wine } from '@/lib/mockData';
 import WineImagesModal from './WineImagesModal';
 import ReviewsModal from './ReviewsModal';
@@ -205,11 +206,23 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                     <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).abv ?? 'N/A'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).volume ?? 'N/A'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => { setImagesModalWine(wine); setImagesModalOpen(true); }}>
-                          View
+                      <div className="flex items-center gap-1.5">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="h-8 px-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          onClick={() => { setImagesModalWine(wine); setImagesModalOpen(true); }}
+                        >
+                          <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
+                          Images
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => { setReviewsModalWine(wine); setReviewsModalOpen(true); }}>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-8 px-2 text-zinc-600 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                          onClick={() => { setReviewsModalWine(wine); setReviewsModalOpen(true); }}
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
                           Reviews
                         </Button>
                       </div>
@@ -266,12 +279,23 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                       <div className="font-medium text-zinc-900 dark:text-white">{w.id} — {w.name}</div>
                       <div className="text-sm text-zinc-600 dark:text-zinc-400">Price: {(() => { const raw = w.price; const parsed = typeof raw === 'number' ? raw : (typeof (raw as any) === 'string' ? parseFloat((raw as any).replace(/[^0-9.-]+/g, '')) : NaN); return !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (raw ? String(raw) : 'N/A'); })()} • {(w as any).currency || 'N/A'} • ABV: {(w as any).abv ?? 'N/A'} • Vol: {(w as any).volume ?? 'N/A'}</div>
                       <div className="text-sm truncate mt-2"><a href={w.url || '#'} target="_blank" rel="noreferrer" className="text-amber-600">Source link</a></div>
-                      <div className="flex items-center gap-2 mt-3">
-                        {/* Edit and Delete buttons removed */}
-                        <Button size="sm" onClick={() => { setImagesModalWine(w); setImagesModalOpen(true); }} className="h-8">
-                          View Images
+                      <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={() => { setImagesModalWine(w); setImagesModalOpen(true); }} 
+                          className="flex-1 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                        >
+                          <ImageIcon className="w-4 h-4 mr-2" />
+                          Gallery
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => { setReviewsModalWine(w); setReviewsModalOpen(true); }} className="h-8">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => { setReviewsModalWine(w); setReviewsModalOpen(true); }} 
+                          className="flex-1 h-9 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:border-amber-200 dark:hover:border-amber-800 hover:text-amber-600 dark:hover:text-amber-400 transition-all font-medium"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
                           Reviews
                         </Button>
                       </div>
@@ -297,6 +321,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
 
       <ReviewsModal
         productId={reviewsModalWine?.id ?? null}
+        productName={reviewsModalWine?.name}
         open={reviewsModalOpen}
         onOpenChange={(open) => {
           if (!open) setReviewsModalWine(null);
