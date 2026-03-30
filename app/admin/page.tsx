@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiTrash2, FiEdit, FiChevronLeft, FiChevronRight, FiFilter, FiRefreshCw } from 'react-icons/fi';
 import useSWR from 'swr';
-import WineModal from '../../components/WineModal';
+import WhiskyModal from '../../components/WhiskyModal';
 import EmbeddingManager from '../../components/EmbeddingManager';
 import clsx from 'clsx';
-import { Wine } from '@/lib/mockData';
+import { Whisky } from '@/lib/mockData';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -16,14 +16,14 @@ export default function AdminPage() {
   const limit = 10;
   const [searchInput, setSearchInput] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
+  const [selectedWhisky, setSelectedWhisky] = useState<Whisky | null>(null);
 
   const { data, error, isLoading, mutate } = useSWR(
     `/api/whiskies?q=${q}&page=${page}&limit=${limit}`,
     fetcher
   );
 
-  const wines: Wine[] = data?.data || [];
+  const whiskies: Whisky[] = data?.data || [];
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
@@ -37,17 +37,17 @@ export default function AdminPage() {
   }, [searchInput]);
 
   const handleCreate = () => {
-    setSelectedWine(null);
+    setSelectedWhisky(null);
     setIsModalOpen(true);
   };
 
-  const handleEdit = (wine: Wine) => {
-    setSelectedWine(wine);
+  const handleEdit = (whisky: Whisky) => {
+    setSelectedWhisky(whisky);
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this wine?')) return;
+    if (!confirm('Are you sure you want to delete this whisky?')) return;
     try {
       const res = await fetch(`/api/whiskies?id=${id}`, { method: 'DELETE' });
       const json = await res.json();
@@ -65,15 +65,15 @@ export default function AdminPage() {
     <div className="p-8">
       <header className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Wines Inventory</h1>
-          <p className="text-zinc-500 mt-1">Manage and track your scraped wine data.</p>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Whiskies Inventory</h1>
+          <p className="text-zinc-500 mt-1">Manage and track your scraped whisky data.</p>
         </div>
         <button 
           onClick={handleCreate}
           className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-zinc-900 font-semibold rounded-xl hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
         >
           <FiPlus className="text-xl" />
-          Add Wine
+          Add Whisky
         </button>
       </header>
 
@@ -146,8 +146,8 @@ export default function AdminPage() {
                     </td>
                   </tr>
                 ))
-              ) : wines.length > 0 ? (
-                wines.map((w) => (
+              ) : whiskies.length > 0 ? (
+                whiskies.map((w) => (
                   <tr key={w.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="font-semibold text-zinc-900 dark:text-white truncate max-w-[200px]" title={w.name}>
@@ -190,7 +190,7 @@ export default function AdminPage() {
               ) : (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-zinc-500">
-                    No wines found matching your search.
+                    No whiskies found matching your search.
                   </td>
                 </tr>
               )}
@@ -240,11 +240,11 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <WineModal 
+      <WhiskyModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={() => mutate()}
-        wine={selectedWine}
+        whisky={selectedWhisky}
       />
     </div>
   );

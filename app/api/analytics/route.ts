@@ -58,16 +58,16 @@ function toRankedValues(map: Map<string, number>, limit: number) {
 
 export async function GET() {
   try {
-    const [totalRow] = await query(`SELECT COUNT(*) as count FROM wine_products`) as any[];
+    const [totalRow] = await query(`SELECT COUNT(*) as count FROM whisky_products`) as any[];
     const totalProducts = Number(totalRow?.count || 0);
 
     const [withImageRow] = await query(
       `SELECT COUNT(*) as count
-         FROM wine_products wp
+         FROM whisky_products wp
         WHERE (wp.image_url IS NOT NULL AND TRIM(wp.image_url) <> '')
            OR EXISTS (
              SELECT 1
-               FROM wine_product_images i
+               FROM whisky_product_images i
               WHERE i.product_id = wp.id
                 AND (
                   (i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0)
@@ -79,7 +79,7 @@ export async function GET() {
 
     const rows = await query(
       `SELECT brand, country, category, price, abv, volume, description
-         FROM wine_products`
+         FROM whisky_products`
     ) as RawRow[];
 
     const brandCounts = new Map<string, number>();
@@ -132,7 +132,7 @@ export async function GET() {
     const scrapeRows = await query(
       `SELECT DATE_FORMAT(scraped_at, '%Y-%m-%d') as scrape_date,
               COUNT(*) as count
-         FROM wine_products
+         FROM whisky_products
         WHERE scraped_at IS NOT NULL
         GROUP BY DATE_FORMAT(scraped_at, '%Y-%m-%d')
         ORDER BY scrape_date DESC

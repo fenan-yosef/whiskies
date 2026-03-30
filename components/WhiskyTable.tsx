@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FiGrid, FiList } from 'react-icons/fi';
 import { MessageSquare, Image as ImageIcon } from 'lucide-react';
-import { Wine } from '@/lib/mockData';
-import WineImagesModal from './WineImagesModal';
+import { Whisky } from '@/lib/mockData';
+import WhiskyImagesModal from './WhiskyImagesModal';
 import ReviewsModal from './ReviewsModal';
 import {
   AlertDialog,
@@ -20,10 +20,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
-interface WineTableProps {
-  wines: Wine[];
+interface WhiskyTableProps {
+  whiskies: Whisky[];
   isLoading: boolean;
-  onEdit: (wine: Wine) => void;
+  onEdit: (whisky: Whisky) => void;
   onDelete: (id: number) => Promise<void>;
   // optional pagination props — if provided, pagination will be rendered
   currentPage?: number;
@@ -31,13 +31,13 @@ interface WineTableProps {
   onPageChange?: (page: number) => void;
 }
 
-export default function WineTable({ wines, isLoading, onEdit, onDelete, currentPage = 1, totalPages = 1, onPageChange, }: WineTableProps) {
+export default function WhiskyTable({ whiskies, isLoading, onEdit, onDelete, currentPage = 1, totalPages = 1, onPageChange, }: WhiskyTableProps) {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  const [imagesModalWine, setImagesModalWine] = useState<Wine | null>(null);
+  const [imagesModalWhisky, setImagesModalWhisky] = useState<Whisky | null>(null);
   const [imagesModalOpen, setImagesModalOpen] = useState(false);
-  const [reviewsModalWine, setReviewsModalWine] = useState<Wine | null>(null);
+  const [reviewsModalWhisky, setReviewsModalWhisky] = useState<Whisky | null>(null);
   const [reviewsModalOpen, setReviewsModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -76,10 +76,10 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
     }
   };
 
-  const displayedWines = useMemo(() => {
-    if (!sortBy) return wines;
+  const displayedWhiskies = useMemo(() => {
+    if (!sortBy) return whiskies;
     const accessor = getAccessor(sortBy);
-    const arr = [...wines];
+    const arr = [...whiskies];
     arr.sort((a, b) => {
       const va = accessor(a);
       const vb = accessor(b);
@@ -93,7 +93,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
       return 0;
     });
     return arr;
-  }, [wines, sortBy, sortDir]);
+  }, [whiskies, sortBy, sortDir]);
 
   const handleDeleteConfirm = async () => {
     if (deleteId === null) return;
@@ -101,19 +101,19 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
     setIsDeleting(true);
     try {
       await onDelete(deleteId);
-      toast.success('Wine deleted successfully');
+      toast.success('Whisky deleted successfully');
       setDeleteId(null);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete wine');
+      toast.error(error.message || 'Failed to delete whisky');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  if (wines.length === 0 && !isLoading) {
+  if (whiskies.length === 0 && !isLoading) {
     return (
       <div className="text-center py-12">
-        <p className="text-lg text-zinc-500">No wines found. Try adjusting your search or add a new wine.</p>
+        <p className="text-lg text-zinc-500">No whiskies found. Try adjusting your search or add a new whisky.</p>
       </div>
     );
   }
@@ -186,30 +186,30 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                 </TableRow>
               ))
             ) : (
-              displayedWines.map((wine) => {
-                const rawPrice = wine.price;
+              displayedWhiskies.map((whisky) => {
+                const rawPrice = whisky.price;
                 const parsed = typeof rawPrice === 'number' ? rawPrice : (typeof (rawPrice as any) === 'string' ? parseFloat((rawPrice as any).replace(/[^0-9.-]+/g, '')) : NaN);
                 const priceDisplay = !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (rawPrice ? String(rawPrice) : 'N/A');
 
                 return (
                   <TableRow
-                    key={wine.id}
+                    key={whisky.id}
                     className="border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
                   >
-                    <TableCell className="font-medium text-zinc-900 dark:text-white">{wine.id}</TableCell>
-                    <TableCell className="font-medium text-zinc-900 dark:text-white">{wine.name}</TableCell>
-                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).brand || '-'}</TableCell>
+                    <TableCell className="font-medium text-zinc-900 dark:text-white">{whisky.id}</TableCell>
+                    <TableCell className="font-medium text-zinc-900 dark:text-white">{whisky.name}</TableCell>
+                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(whisky as any).brand || '-'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">{priceDisplay}</TableCell>
-                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).currency || 'N/A'}</TableCell>
-                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).abv ?? 'N/A'}</TableCell>
-                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(wine as any).volume ?? 'N/A'}</TableCell>
+                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(whisky as any).currency || 'N/A'}</TableCell>
+                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(whisky as any).abv ?? 'N/A'}</TableCell>
+                    <TableCell className="text-zinc-600 dark:text-zinc-400">{(whisky as any).volume ?? 'N/A'}</TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400">
                       <div className="flex items-center gap-1.5">
                         <Button 
                           size="sm" 
                           variant="ghost"
                           className="h-8 px-2 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                          onClick={() => { setImagesModalWine(wine); setImagesModalOpen(true); }}
+                          onClick={() => { setImagesModalWhisky(whisky); setImagesModalOpen(true); }}
                         >
                           <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
                           Images
@@ -218,7 +218,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                           size="sm" 
                           variant="ghost" 
                           className="h-8 px-2 text-zinc-600 hover:text-amber-600 dark:text-zinc-400 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                          onClick={() => { setReviewsModalWine(wine); setReviewsModalOpen(true); }}
+                          onClick={() => { setReviewsModalWhisky(whisky); setReviewsModalOpen(true); }}
                         >
                           <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
                           Reviews
@@ -226,7 +226,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                       </div>
                     </TableCell>
                     <TableCell className="text-zinc-600 dark:text-zinc-400 max-w-xs truncate">
-                      {wine.url ? <a href={wine.url} target="_blank" rel="noreferrer" className="text-amber-600">Link</a> : 'N/A'}
+                      {whisky.url ? <a href={whisky.url} target="_blank" rel="noreferrer" className="text-amber-600">Link</a> : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -246,12 +246,12 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                 <div key={i} className="border rounded-lg p-4 animate-pulse bg-zinc-50 dark:bg-zinc-900" />
               ))
             ) : (
-              displayedWines.map((w) => {
+              displayedWhiskies.map((whisky) => {
                 const imgs: string[] = [];
-                if (w.image_url) imgs.push(w.image_url);
-                if (w.all_images) {
+                if (whisky.image_url) imgs.push(whisky.image_url);
+                if (whisky.all_images) {
                   try {
-                    const parsed = typeof w.all_images === 'string' ? JSON.parse(w.all_images) : w.all_images;
+                    const parsed = typeof whisky.all_images === 'string' ? JSON.parse(whisky.all_images) : whisky.all_images;
                     if (Array.isArray(parsed)) {
                       parsed.forEach((img: any) => { if (typeof img === 'string' && img && !imgs.includes(img)) imgs.push(img); });
                     }
@@ -260,13 +260,13 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                   }
                 }
                 return (
-                  <div key={w.id} className="border rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
+                  <div key={whisky.id} className="border rounded-lg overflow-hidden bg-white dark:bg-zinc-900">
                     <div className="h-48 bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
                       {imgs.length > 0 ? (
                         <div className="flex w-full h-full">
                           {imgs.slice(0,3).map((src: string, i: number) => (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img key={i} src={src} alt={`${w.name}-${i}`} className={`object-cover ${i===0? 'w-2/3': 'w-1/3'} h-full`} />
+                            <img key={i} src={src} alt={`${whisky.name}-${i}`} className={`object-cover ${i===0? 'w-2/3': 'w-1/3'} h-full`} />
                           ))}
                         </div>
                       ) : (
@@ -274,14 +274,14 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                       )}
                     </div>
                     <div className="p-3">
-                      <div className="font-medium text-zinc-900 dark:text-white">{w.id} — {w.name}</div>
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">Price: {(() => { const raw = w.price; const parsed = typeof raw === 'number' ? raw : (typeof (raw as any) === 'string' ? parseFloat((raw as any).replace(/[^0-9.-]+/g, '')) : NaN); return !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (raw ? String(raw) : 'N/A'); })()} • {(w as any).currency || 'N/A'} • ABV: {(w as any).abv ?? 'N/A'} • Vol: {(w as any).volume ?? 'N/A'}</div>
-                      <div className="text-sm truncate mt-2"><a href={w.url || '#'} target="_blank" rel="noreferrer" className="text-amber-600">Source link</a></div>
+                      <div className="font-medium text-zinc-900 dark:text-white">{whisky.id} — {whisky.name}</div>
+                      <div className="text-sm text-zinc-600 dark:text-zinc-400">Price: {(() => { const raw = whisky.price; const parsed = typeof raw === 'number' ? raw : (typeof (raw as any) === 'string' ? parseFloat((raw as any).replace(/[^0-9.-]+/g, '')) : NaN); return !isNaN(parsed) ? `$${parsed.toFixed(2)}` : (raw ? String(raw) : 'N/A'); })()} • {(whisky as any).currency || 'N/A'} • ABV: {(whisky as any).abv ?? 'N/A'} • Vol: {(whisky as any).volume ?? 'N/A'}</div>
+                      <div className="text-sm truncate mt-2"><a href={whisky.url || '#'} target="_blank" rel="noreferrer" className="text-amber-600">Source link</a></div>
                       <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                         <Button 
                           size="sm" 
                           variant="secondary"
-                          onClick={() => { setImagesModalWine(w); setImagesModalOpen(true); }} 
+                          onClick={() => { setImagesModalWhisky(whisky); setImagesModalOpen(true); }} 
                           className="flex-1 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                         >
                           <ImageIcon className="w-4 h-4 mr-2" />
@@ -290,7 +290,7 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          onClick={() => { setReviewsModalWine(w); setReviewsModalOpen(true); }} 
+                          onClick={() => { setReviewsModalWhisky(w); setReviewsModalOpen(true); }} 
                           className="flex-1 h-9 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:border-amber-200 dark:hover:border-amber-800 hover:text-amber-600 dark:hover:text-amber-400 transition-all font-medium"
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
@@ -306,23 +306,23 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
         )}
       </div>
 
-      <WineImagesModal
-        productId={imagesModalWine?.id ?? null}
-        mainImage={imagesModalWine?.image_url}
-        otherImages={imagesModalWine?.all_images}
+      <WhiskyImagesModal
+        productId={imagesModalWhisky?.id ?? null}
+        mainImage={imagesModalWhisky?.image_url}
+        otherImages={imagesModalWhisky?.all_images}
         open={imagesModalOpen}
         onOpenChange={(open) => {
-          if (!open) setImagesModalWine(null);
+          if (!open) setImagesModalWhisky(null);
           setImagesModalOpen(open);
         }}
       />
 
       <ReviewsModal
-        productId={reviewsModalWine?.id ?? null}
-        productName={reviewsModalWine?.name}
+        productId={reviewsModalWhisky?.id ?? null}
+        productName={reviewsModalWhisky?.name}
         open={reviewsModalOpen}
         onOpenChange={(open) => {
-          if (!open) setReviewsModalWine(null);
+          if (!open) setReviewsModalWhisky(null);
           setReviewsModalOpen(open);
         }}
       />
@@ -347,8 +347,8 @@ export default function WineTable({ wines, isLoading, onEdit, onDelete, currentP
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Wine</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete this wine? This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>Delete Whisky</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to delete this whisky? This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">

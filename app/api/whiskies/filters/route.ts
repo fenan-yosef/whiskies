@@ -11,7 +11,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: 'Invalid field' }, { status: 400 });
     }
 
-    const rows = await query(`SELECT DISTINCT ${field} as v FROM wine_products WHERE ${field} IS NOT NULL AND ${field} <> '' ORDER BY ${field} ASC LIMIT 100` ) as any[];
+    const rows = await query(`SELECT DISTINCT ${field} as v FROM whisky_products WHERE ${field} IS NOT NULL AND ${field} <> '' ORDER BY ${field} ASC LIMIT 100` ) as any[];
     const values = rows.map(r => r.v).filter(Boolean);
     return NextResponse.json({ success: true, data: values });
   } catch (err) {

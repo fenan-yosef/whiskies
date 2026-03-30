@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       // detect which searchable columns exist in the current DB/schema
       const dbName = process.env.DB_NAME || 'whisky_db';
       const colsRes = await query(
-        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'wine_products'`,
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'whisky_products'`,
         [dbName]
       ) as any[];
       const existingCols = colsRes.map((r) => r.COLUMN_NAME);
@@ -70,37 +70,37 @@ export async function GET(req: Request) {
     }
 
     if (hasImages) {
-      whereParts.push(`((wine_products.image_url IS NOT NULL AND TRIM(wine_products.image_url) <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wine_products.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND TRIM(i.url) <> ''))))`);
+      whereParts.push(`((whisky_products.image_url IS NOT NULL AND TRIM(whisky_products.image_url) <> '') OR EXISTS (SELECT 1 FROM whisky_product_images i WHERE i.product_id = whisky_products.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND TRIM(i.url) <> ''))))`);
     }
 
     if (hasReviews) {
-      whereParts.push(`EXISTS (SELECT 1 FROM wine_product_reviews r WHERE r.product_id = wine_products.id)`);
+      whereParts.push(`EXISTS (SELECT 1 FROM whisky_product_reviews r WHERE r.product_id = whisky_products.id)`);
     }
 
     const whereClause = whereParts.length > 0 ? `WHERE ${whereParts.join(' AND ')}` : '';
-    const withImageCondition = `((wine_products.image_url IS NOT NULL AND TRIM(wine_products.image_url) <> '') OR EXISTS (SELECT 1 FROM wine_product_images i WHERE i.product_id = wine_products.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND TRIM(i.url) <> ''))))`;
+    const withImageCondition = `((whisky_products.image_url IS NOT NULL AND TRIM(whisky_products.image_url) <> '') OR EXISTS (SELECT 1 FROM whisky_product_images i WHERE i.product_id = whisky_products.id AND ((i.img_blob IS NOT NULL AND OCTET_LENGTH(i.img_blob) > 0) OR (i.url IS NOT NULL AND TRIM(i.url) <> ''))))`;
     const withImageWhere = whereClause ? `${whereClause} AND ${withImageCondition}` : `WHERE ${withImageCondition}`;
 
-    const [totalRow] = (await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams)) as any[];
+    const [totalRow] = (await query(`SELECT COUNT(*) as count FROM whisky_products ${whereClause}`, whereParams)) as any[];
     const total = Number(totalRow?.count || 0);
 
-    const [rowsCount] = (await query(`SELECT COUNT(*) as count FROM wine_products ${whereClause}`, whereParams)) as any[];
+    const [rowsCount] = (await query(`SELECT COUNT(*) as count FROM whisky_products ${whereClause}`, whereParams)) as any[];
     const total_rows = Number(rowsCount?.count || 0);
 
-    const [distinctCount] = (await query(`SELECT COUNT(DISTINCT url) as count FROM wine_products ${whereClause}`, whereParams)) as any[];
+    const [distinctCount] = (await query(`SELECT COUNT(DISTINCT url) as count FROM whisky_products ${whereClause}`, whereParams)) as any[];
     const total_distinct_urls = Number(distinctCount?.count || 0);
 
-    const [withImageCount] = (await query(`SELECT COUNT(*) as count FROM wine_products ${withImageWhere}`, whereParams)) as any[];
+    const [withImageCount] = (await query(`SELECT COUNT(*) as count FROM whisky_products ${withImageWhere}`, whereParams)) as any[];
     const total_with_image = Number(withImageCount?.count || 0);
 
-    const [idRange] = (await query(`SELECT MIN(id) as min_id, MAX(id) as max_id FROM wine_products ${whereClause}`, whereParams)) as any[];
+    const [idRange] = (await query(`SELECT MIN(id) as min_id, MAX(id) as max_id FROM whisky_products ${whereClause}`, whereParams)) as any[];
     const min_id = idRange?.min_id ?? null;
     const max_id = idRange?.max_id ?? null;
 
     // LIMIT/OFFSET cannot always be used as prepared-statement params on some MySQL setups
     const safeLimit = Number(limit) || 25;
     const safeOffset = Number(offset) || 0;
-    const rows = await query(`SELECT * FROM wine_products ${whereClause} ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`, whereParams);
+    const rows = await query(`SELECT * FROM whisky_products ${whereClause} ${orderClause} LIMIT ${safeLimit} OFFSET ${safeOffset}`, whereParams);
 
     return NextResponse.json({
       success: true,
@@ -129,7 +129,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const sql = `INSERT INTO wine_products (name, price, url, image_url, description, brand, source) VALUES (?,?,?,?,?,?,?)`;
+    const sql = `INSERT INTO whisky_products (name, price, url, image_url, description, brand, source) VALUES (?,?,?,?,?,?,?)`;
     const vals = [
       body.name || null,
       body.price || null,
@@ -166,7 +166,7 @@ export async function PUT(req: Request) {
     if (fields.length === 0) return NextResponse.json({ success: false, error: 'No fields to update' }, { status: 400 });
 
     vals.push(body.id);
-    const sql = `UPDATE wine_products SET ${fields.join(', ')} WHERE id = ?`;
+    const sql = `UPDATE whisky_products SET ${fields.join(', ')} WHERE id = ?`;
     const result = await query(sql, vals);
     return NextResponse.json({ success: true, result });
   } catch (err) {
@@ -181,7 +181,7 @@ export async function DELETE(req: Request) {
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
-    const result = await query(`DELETE FROM wine_products WHERE id = ?`, [id]);
+    const result = await query(`DELETE FROM whisky_products WHERE id = ?`, [id]);
     return NextResponse.json({ success: true, result });
   } catch (err) {
     // eslint-disable-next-line no-console

@@ -24,16 +24,16 @@ import {
   ChevronDown
 } from 'lucide-react';
 import SearchBar from '@/components/SearchBar';
-import WineTable from '@/components/WineTable';
-import WineModal from '@/components/WineModal';
+import WhiskyTable from '@/components/WhiskyTable';
+import WhiskyModal from '@/components/WhiskyModal';
 import { SearchableSelect } from '@/components/SearchableSelect';
-import { Wine } from '@/lib/mockData';
+import { Whisky } from '@/lib/mockData';
 import { toast } from 'sonner';
 import debounce from 'lodash.debounce';
 
 interface ApiResponse {
   success: boolean;
-  data: Wine[];
+  data: Whisky[];
   total: number;
   total_distinct_urls?: number;
   total_with_image?: number;
@@ -60,7 +60,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'id_asc' | 'id_desc' | 'scraped_at_desc' | 'scraped_at_asc'>('id_asc');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedWine, setSelectedWine] = useState<Wine | null>(null);
+  const [selectedWhisky, setSelectedWhisky] = useState<Whisky | null>(null);
 
   // filter params
   const [brandFilter, setBrandFilter] = useState<string | null>(null);
@@ -152,21 +152,21 @@ export default function Dashboard() {
   };
 
   const handleAddClick = () => {
-    setSelectedWine(null);
+    setSelectedWhisky(null);
     setIsModalOpen(true);
   };
 
-  const handleEditClick = (wine: Wine) => {
-    setSelectedWine(wine);
+  const handleEditClick = (whisky: Whisky) => {
+    setSelectedWhisky(whisky);
     setIsModalOpen(true);
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
-    setSelectedWine(null);
+    setSelectedWhisky(null);
   };
 
-  const handleSaveWine = async (formData: any) => {
+  const handleSaveWhisky = async (formData: any) => {
     try {
       const isUpdate = 'id' in formData;
       const method = isUpdate ? 'PUT' : 'POST';
@@ -182,17 +182,17 @@ export default function Dashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save wine');
+        throw new Error(errorData.error || 'Failed to save whisky');
       }
 
       await mutate();
       handleModalClose();
     } catch (error: any) {
-      throw new Error(error.message || 'Failed to save wine');
+      throw new Error(error.message || 'Failed to save whisky');
     }
   };
 
-  const handleDeleteWine = async (id: number) => {
+  const handleDeleteWhisky = async (id: number) => {
     try {
       const response = await fetch(`/api/whiskies?id=${id}`, {
         method: 'DELETE',
@@ -200,12 +200,12 @@ export default function Dashboard() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete wine');
+        throw new Error(errorData.error || 'Failed to delete whisky');
       }
 
       await mutate();
     } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete wine');
+      throw new Error(error.message || 'Failed to delete whisky');
     }
   };
 
@@ -517,11 +517,11 @@ export default function Dashboard() {
           </section>
 
           <section className="wp-card animate-rise-delay-2 overflow-hidden rounded-[28px] p-2">
-            <WineTable
-              wines={data?.data || []}
+            <WhiskyTable
+              whiskies={data?.data || []}
               isLoading={isLoading}
               onEdit={handleEditClick}
-              onDelete={handleDeleteWine}
+              onDelete={handleDeleteWhisky}
               currentPage={page}
               totalPages={data?.totalPages || 1}
               onPageChange={setPage}
@@ -530,11 +530,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <WineModal
+      <WhiskyModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        onSave={handleSaveWine}
-        wine={selectedWine}
+        onSave={handleSaveWhisky}
+        whisky={selectedWhisky}
       />
     </div>
   );

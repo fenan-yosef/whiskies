@@ -9,13 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Wine } from '@/lib/mockData';
+import { Whisky } from '@/lib/mockData';
 
-interface WineModalProps {
+interface WhiskyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (wine: any) => Promise<void>;
-  wine?: Wine | null;
+  onSave: (whisky: any) => Promise<void>;
+  whisky?: Whisky | null;
 }
 
 const emptyForm = {
@@ -25,11 +25,11 @@ const emptyForm = {
   image_url: '',
   description: '',
   brand: '',
-  source: 'wine.com',
+  source: 'whisky.com',
 };
 
-export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalProps) {
-  const [formData, setFormData] = useState<any>(wine || emptyForm);
+export default function WhiskyModal({ isOpen, onClose, onSave, whisky }: WhiskyModalProps) {
+  const [formData, setFormData] = useState<any>(whisky || emptyForm);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -45,9 +45,9 @@ export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalPr
     setIsLoading(true);
 
     try {
-      const payload = wine
+      const payload = whisky
         ? {
-            id: wine.id,
+            id: whisky.id,
             ...formData,
             price: parseFloat(formData.price) || null,
           }
@@ -58,16 +58,16 @@ export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalPr
 
       await onSave(payload);
 
-      if (!wine) {
-        toast.success('Wine added successfully!');
+      if (!whisky) {
+        toast.success('Whisky added successfully!');
       } else {
-        toast.success('Wine updated successfully!');
+        toast.success('Whisky updated successfully!');
       }
 
       setFormData(emptyForm);
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to save wine');
+      toast.error(error.message || 'Failed to save whisky');
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +75,7 @@ export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalPr
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setFormData(wine || emptyForm);
+      setFormData(whisky || emptyForm);
       onClose();
     }
   };
@@ -84,7 +84,7 @@ export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalPr
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{wine ? 'Edit Wine' : 'Add New Wine'}</DialogTitle>
+          <DialogTitle>{whisky ? 'Edit Whisky' : 'Add New Whisky'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -138,9 +138,9 @@ export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalPr
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
               >
-                <option value="wine.com">wine.com</option>
+                <option value="whisky.com">whisky.com</option>
                 <option value="vivino">vivino</option>
-                <option value="wine-searcher">wine-searcher</option>
+                <option value="whisky-searcher">whisky-searcher</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -180,7 +180,7 @@ export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalPr
               name="description"
               value={formData.description}
               onChange={handleChange}
-              placeholder="Enter a detailed description of the wine"
+              placeholder="Enter a detailed description of the whisky"
               rows={3}
             />
           </div>
@@ -190,7 +190,7 @@ export default function WineModal({ isOpen, onClose, onSave, wine }: WineModalPr
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : 'Save Wine'}
+              {isLoading ? 'Saving...' : 'Save Whisky'}
             </Button>
           </DialogFooter>
         </form>

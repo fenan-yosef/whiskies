@@ -8,7 +8,7 @@ import {
   FiBarChart2
 } from 'react-icons/fi';
 import { 
-  Wine as WineIcon, 
+  Wine as WhiskyIcon, 
   ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
@@ -26,7 +26,7 @@ export default function Sidebar() {
       <div className="border-b border-white/10 px-6 pb-5 pt-6">
         <div className="animate-rise flex items-center gap-3.5">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2271b1] text-white shadow-lg shadow-blue-900/40">
-            <WineIcon className="h-5 w-5" />
+            <WhiskyIcon className="h-5 w-5" />
           </div>
           <div>
             <p className="wp-heading text-lg font-semibold text-white">WHISKIES DB INSPECTOR</p>

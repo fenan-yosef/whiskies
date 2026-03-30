@@ -1,4 +1,4 @@
-export interface Wine {
+export interface Whisky {
   id: number;
   name: string;
   url: string;
@@ -11,16 +11,16 @@ export interface Wine {
   scraped_at: string;
 }
 
-export const mockWines: Wine[] = [
+export const mockWhiskys: Whisky[] = [
   {
     id: 1,
     name: 'Chateau Margaux 2015',
     price: 450.00,
     url: 'https://example.com/chateau-margaux-2015',
     image_url: 'https://via.placeholder.com/300x400?text=Margaux',
-    description: 'A prestigious Bordeaux wine with exceptional aging potential.',
+    description: 'A prestigious Bordeaux whisky with exceptional aging potential.',
     brand: 'Chateau Margaux',
-    source: 'wine.com',
+    source: 'whisky.com',
     scraped_at: new Date().toISOString(),
   },
   {
@@ -31,7 +31,7 @@ export const mockWines: Wine[] = [
     image_url: 'https://via.placeholder.com/300x400?text=Opus+One',
     description: 'A blend of Cabernet Sauvignon and Merlot from Napa Valley.',
     brand: 'Opus One',
-    source: 'wine.com',
+    source: 'whisky.com',
     scraped_at: new Date().toISOString(),
   },
   {
@@ -40,9 +40,9 @@ export const mockWines: Wine[] = [
     price: 1200.00,
     url: 'https://example.com/romanee-conti-2017',
     image_url: 'https://via.placeholder.com/300x400?text=Roman%C3%A9e-Conti',
-    description: 'One of the most sought-after Pinot Noir wines from Burgundy.',
+    description: 'One of the most sought-after Pinot Noir whiskies from Burgundy.',
     brand: 'Domaine de la Romanée-Conti',
-    source: 'wine.com',
+    source: 'whisky.com',
     scraped_at: new Date().toISOString(),
   },
   {
@@ -51,9 +51,9 @@ export const mockWines: Wine[] = [
     price: 650.00,
     url: 'https://example.com/penfolds-grange-2016',
     image_url: 'https://via.placeholder.com/300x400?text=Penfolds+Grange',
-    description: 'Australia\'s most famous wine, a powerful Shiraz blend.',
+    description: 'Australia\'s most famous whisky, a powerful Shiraz blend.',
     brand: 'Penfolds',
-    source: 'wine.com',
+    source: 'whisky.com',
     scraped_at: new Date().toISOString(),
   },
   {
@@ -64,51 +64,51 @@ export const mockWines: Wine[] = [
     image_url: 'https://via.placeholder.com/300x400?text=Screaming+Eagle',
     description: 'Ultra-rare Napa Valley Cabernet with legendary status.',
     brand: 'Screaming Eagle',
-    source: 'wine.com',
+    source: 'whisky.com',
     scraped_at: new Date().toISOString(),
   },
 ];
 
 // In-memory storage for mock data mutations
-export let winesStore = [...mockWines];
+export let whiskiesStore = [...mockWhiskys];
 let nextId = 6;
 
 export function resetMockData() {
-  winesStore = [...mockWines];
+  whiskiesStore = [...mockWhiskys];
   nextId = 6;
 }
 
-export function searchWines(query: string): Wine[] {
+export function searchWhiskys(query: string): Whisky[] {
   const lowerQuery = query.toLowerCase();
-  return winesStore.filter((wine) => {
+  return whiskiesStore.filter((whisky) => {
     return (
-      wine.name.toLowerCase().includes(lowerQuery) ||
-      wine.brand.toLowerCase().includes(lowerQuery) ||
-      wine.description.toLowerCase().includes(lowerQuery)
+      whisky.name.toLowerCase().includes(lowerQuery) ||
+      whisky.brand.toLowerCase().includes(lowerQuery) ||
+      whisky.description.toLowerCase().includes(lowerQuery)
     );
   });
 }
 
-export function addWineToStore(wine: Omit<Wine, 'id' | 'scraped_at'>): Wine {
-  const newWine: Wine = {
-    ...wine,
+export function addWhiskyToStore(whisky: Omit<Whisky, 'id' | 'scraped_at'>): Whisky {
+  const newWhisky: Whisky = {
+    ...whisky,
     id: nextId++,
     scraped_at: new Date().toISOString(),
   };
-  winesStore.push(newWine);
-  return newWine;
+  whiskiesStore.push(newWhisky);
+  return newWhisky;
 }
 
-export function updateWineInStore(id: number, updates: Partial<Wine>): Wine | null {
-  const index = winesStore.findIndex((w) => w.id === id);
+export function updateWhiskyInStore(id: number, updates: Partial<Whisky>): Whisky | null {
+  const index = whiskiesStore.findIndex((w) => w.id === id);
   if (index === -1) return null;
-  winesStore[index] = { ...winesStore[index], ...updates, id, scraped_at: new Date().toISOString() };
-  return winesStore[index];
+  whiskiesStore[index] = { ...whiskiesStore[index], ...updates, id, scraped_at: new Date().toISOString() };
+  return whiskiesStore[index];
 }
 
-export function deleteWineFromStore(id: number): boolean {
-  const index = winesStore.findIndex((w) => w.id === id);
+export function deleteWhiskyFromStore(id: number): boolean {
+  const index = whiskiesStore.findIndex((w) => w.id === id);
   if (index === -1) return false;
-  winesStore.splice(index, 1);
+  whiskiesStore.splice(index, 1);
   return true;
 }

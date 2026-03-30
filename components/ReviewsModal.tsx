@@ -57,7 +57,7 @@ export default function ReviewsModal({ productId, productName, open, onOpenChang
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/wine-reviews?product_id=${productId}`);
+        const res = await fetch(`/api/whisky-reviews?product_id=${productId}`);
         const json = await res.json();
         if (!json.success) throw new Error(json.error || 'Failed to load reviews');
         if (mounted) {

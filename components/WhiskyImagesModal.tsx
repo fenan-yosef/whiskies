@@ -22,7 +22,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-export default function WineImagesModal({ productId, mainImage, otherImages, open, onOpenChange }: Props) {
+export default function WhiskyImagesModal({ productId, mainImage, otherImages, open, onOpenChange }: Props) {
   const [images, setImages] = useState<ImageRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +32,7 @@ export default function WineImagesModal({ productId, mainImage, otherImages, ope
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/wine-images?product_id=${productId}`);
+        const res = await fetch(`/api/whisky-images?product_id=${productId}`);
         const json = await res.json();
         if (!json.success) throw new Error(json.error || 'Failed to load images');
         if (mounted) {

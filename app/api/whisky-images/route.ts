@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     const rows = await query(
       `SELECT id, product_id, url, file_path, position,
               CASE WHEN (url IS NULL OR url = '') THEN img_blob ELSE NULL END AS img_blob
-         FROM wine_product_images
+         FROM whisky_product_images
         WHERE product_id = ?
         ORDER BY position ASC, id ASC`,
       [productIdNum]
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, data: images });
   } catch (err) {
-    console.error('GET /api/wine-images error', err);
+    console.error('GET /api/whisky-images error', err);
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
 }
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Missing product_id' }, { status: 400 });
     }
 
-    const sql = `INSERT INTO wine_product_images (product_id, url, img_blob, position) VALUES (?, ?, ?, ?)`;
+    const sql = `INSERT INTO whisky_product_images (product_id, url, img_blob, position) VALUES (?, ?, ?, ?)`;
     const vals = [
       product_id,
       url || null,
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     const result = await query(sql, vals);
     return NextResponse.json({ success: true, result });
   } catch (err) {
-    console.error('POST /api/wine-images error', err);
+    console.error('POST /api/whisky-images error', err);
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
 }
@@ -95,11 +95,11 @@ export async function PUT(req: Request) {
     if (fields.length === 0) return NextResponse.json({ success: false, error: 'No fields to update' }, { status: 400 });
 
     vals.push(body.id);
-    const sql = `UPDATE wine_product_images SET ${fields.join(', ')} WHERE id = ?`;
+    const sql = `UPDATE whisky_product_images SET ${fields.join(', ')} WHERE id = ?`;
     const result = await query(sql, vals);
     return NextResponse.json({ success: true, result });
   } catch (err) {
-    console.error('PUT /api/wine-images error', err);
+    console.error('PUT /api/whisky-images error', err);
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
 }
@@ -109,10 +109,10 @@ export async function DELETE(req: Request) {
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ success: false, error: 'Missing id' }, { status: 400 });
-    const result = await query(`DELETE FROM wine_product_images WHERE id = ?`, [id]);
+    const result = await query(`DELETE FROM whisky_product_images WHERE id = ?`, [id]);
     return NextResponse.json({ success: true, result });
   } catch (err) {
-    console.error('DELETE /api/wine-images error', err);
+    console.error('DELETE /api/whisky-images error', err);
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
 }
