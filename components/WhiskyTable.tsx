@@ -290,7 +290,7 @@ export default function WhiskyTable({ whiskies, isLoading, onEdit, onDelete, cur
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          onClick={() => { setReviewsModalWhisky(w); setReviewsModalOpen(true); }} 
+                          onClick={() => { setReviewsModalWhisky(whisky); setReviewsModalOpen(true); }} 
                           className="flex-1 h-9 rounded-xl border-zinc-200 dark:border-zinc-800 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:border-amber-200 dark:hover:border-amber-800 hover:text-amber-600 dark:hover:text-amber-400 transition-all font-medium"
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
