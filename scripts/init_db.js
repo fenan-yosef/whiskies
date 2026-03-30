@@ -24,10 +24,10 @@ async function initializeDatabase() {
     // Use the database
     await connection.query('USE `whisky_db`');
 
-    // Create wine_products table
-    console.log('[v0] Creating wine_products table...');
+    // Create whisky_products table
+    console.log('[v0] Creating whisky_products table...');
     await connection.query(`
-      CREATE TABLE IF NOT EXISTS wine_products (
+      CREATE TABLE IF NOT EXISTS whisky_products (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255),
         url VARCHAR(512),
@@ -40,22 +40,22 @@ async function initializeDatabase() {
         UNIQUE KEY unique_url_source (url, source)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
-    console.log('[v0] ✓ wine_products table created or already exists');
+    console.log('[v0] ✓ whisky_products table created or already exists');
 
-    // Create wine_product_images table
-    console.log('[v0] Creating wine_product_images table...');
+    // Create whisky_product_images table
+    console.log('[v0] Creating whisky_product_images table...');
     await connection.query(`
-      CREATE TABLE IF NOT EXISTS wine_product_images (
+      CREATE TABLE IF NOT EXISTS whisky_product_images (
         id INT AUTO_INCREMENT PRIMARY KEY,
         product_id INT NOT NULL,
         url VARCHAR(512),
         img_blob LONGBLOB,
         position INT DEFAULT 0,
-        FOREIGN KEY (product_id) REFERENCES wine_products(id) ON DELETE CASCADE,
+        FOREIGN KEY (product_id) REFERENCES whisky_products(id) ON DELETE CASCADE,
         INDEX idx_product_id (product_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     `);
-    console.log('[v0] ✓ wine_product_images table created or already exists');
+    console.log('[v0] ✓ whisky_product_images table created or already exists');
 
     console.log('[v0] ✓ Database initialization completed successfully!');
   } catch (error) {

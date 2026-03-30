@@ -1,6 +1,6 @@
 # Embedding Service
 
-This folder adds image-embedding indexing and search for the existing MySQL `wine_product_images` blobs.
+This folder adds image-embedding indexing and search for the existing MySQL `whisky_product_images` blobs.
 
 ## Why this model
 

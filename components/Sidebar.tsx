@@ -3,12 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  FiHome, 
-  FiLogOut, 
-  FiBarChart2
+  FiHome
 } from 'react-icons/fi';
 import { 
-  Wine as WhiskyIcon, 
   ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
@@ -18,7 +15,6 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: FiHome },
-    // { name: 'Analytics', href: '/analytics', icon: FiBarChart2 },
   ];
 
   return (
@@ -26,7 +22,7 @@ export default function Sidebar() {
       <div className="border-b border-white/10 px-6 pb-5 pt-6">
         <div className="animate-rise flex items-center gap-3.5">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2271b1] text-white shadow-lg shadow-blue-900/40">
-            <WhiskyIcon className="h-5 w-5" />
+            <ShieldCheck className="h-5 w-5" />
           </div>
           <div>
             <p className="wp-heading text-lg font-semibold text-white">WHISKIES DB INSPECTOR</p>

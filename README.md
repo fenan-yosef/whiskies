@@ -1,13 +1,13 @@
-# Wine Inventory Management Application
+# Whisky Inventory Management Application
 
-A professional full-stack wine inventory management application built with Next.js 16, React 19, and MySQL. Features a clean admin interface with search, filtering, pagination, and complete CRUD operations.
+A professional full-stack whisky inventory management application built with Next.js 16, React 19, and MySQL. Features a clean admin interface with search, filtering, pagination, and complete CRUD operations.
 
 ## Features
 
-- ✅ **Browse & Search**: Real-time search across wine name, brand, and description
-- ✅ **Create**: Add new wines with comprehensive form validation
-- ✅ **Update**: Edit existing wine records with modal form
-- ✅ **Delete**: Remove wines with confirmation dialog
+- ✅ **Browse & Search**: Real-time search across whisky name, brand, and description
+- ✅ **Create**: Add new whiskies with comprehensive form validation
+- ✅ **Update**: Edit existing whisky records with modal form
+- ✅ **Delete**: Remove whiskies with confirmation dialog
 - ✅ **Pagination**: Navigate through large datasets efficiently (10 items per page)
 - ✅ **Responsive Design**: Mobile-first design with Tailwind CSS v4
 - ✅ **Error Handling**: Graceful fallback to mock data when database is unavailable
@@ -66,10 +66,10 @@ You should see:
 [v0] Connecting to MySQL server...
 [v0] Creating database if it does not exist...
 [v0] ✓ Database created or already exists
-[v0] Creating wine_products table...
-[v0] ✓ wine_products table created or already exists
-[v0] Creating wine_product_images table...
-[v0] ✓ wine_product_images table created or already exists
+[v0] Creating whisky_products table...
+[v0] ✓ whisky_products table created or already exists
+[v0] Creating whisky_product_images table...
+[v0] ✓ whisky_product_images table created or already exists
 [v0] ✓ Database initialization completed successfully!
 ```
 
@@ -92,28 +92,28 @@ The main dashboard displays:
 - **Pagination**: Navigate through pages efficiently
 - **Refresh Button**: Manually refresh data
 
-### Add Wine
+### Add Whisky
 
-Click the "Add Wine" button to open the modal form:
+Click the "Add Whisky" button to open the modal form:
 - Fill in required fields (Name, Price, Brand)
 - Add optional details (URL, Image URL, Description, Source)
-- Click "Save Wine" to submit
+- Click "Save Whisky" to submit
 
-### Edit Wine
+### Edit Whisky
 
-Click the edit (pencil) icon on any wine row to open the edit modal:
+Click the edit (pencil) icon on any whisky row to open the edit modal:
 - Modify any field
-- Click "Save Wine" to update
+- Click "Save Whisky" to update
 
-### Delete Wine
+### Delete Whisky
 
-Click the delete (trash) icon on any wine row:
+Click the delete (trash) icon on any whisky row:
 - Confirm deletion in the alert dialog
 - The record will be removed
 
 ### Search
 
-Type in the search bar to filter wines by:
+Type in the search bar to filter whiskies by:
 - Name
 - Brand
 - Description
@@ -211,7 +211,7 @@ Delete a whisky record
 
 ## Image Embedding Search (Integrated)
 
-This codebase now includes a Python embedding service that indexes images from `wine_product_images.img_blob` and enables visual similarity search.
+This codebase now includes a Python embedding service that indexes images from `whisky_product_images.img_blob` and enables visual similarity search.
 
 ### Why this model
 

@@ -21,7 +21,7 @@ mysql -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'${DB_HOST}' IDENTIFIED BY '${D
 
 # Verify user can connect (simple test)
 echo "Testing DB connection (as ${DB_USER})..."
-mysql -u"${DB_USER}" -p"${DB_PASS}" -h"${DB_HOST}" -P"${DB_PORT}" -e "SELECT COUNT(*) AS cnt FROM ${DB_NAME}.wine_products LIMIT 1;" || true
+mysql -u"${DB_USER}" -p"${DB_PASS}" -h"${DB_HOST}" -P"${DB_PORT}" -e "SELECT COUNT(*) AS cnt FROM ${DB_NAME}.whisky_products LIMIT 1;" || true
 
 # Backup and write .env.production
 if [ -f "${ENV_FILE}" ]; then

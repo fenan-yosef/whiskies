@@ -39,9 +39,9 @@ async function migrateData() {
 
     // Insert data into new tables
     for (const record of oldData) {
-      // Insert into wine_products
+      // Insert into whisky_products
       const [productResult] = await connection.query(
-        `INSERT INTO wine_products (name, url, price, image_url, description, brand, source, scraped_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO whisky_products (name, url, price, image_url, description, brand, source, scraped_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           record.name || null,
           record.url || null,
@@ -56,10 +56,10 @@ async function migrateData() {
 
       const productId = productResult.insertId;
 
-      // If there's image_data, insert into wine_product_images
+      // If there's image_data, insert into whisky_product_images
       if (record.image_data) {
         await connection.query(
-          `INSERT INTO wine_product_images (product_id, img_blob, position) VALUES (?, ?, ?)`,
+          `INSERT INTO whisky_product_images (product_id, img_blob, position) VALUES (?, ?, ?)`,
           [productId, record.image_data, 0]
         );
       }

@@ -76,8 +76,8 @@ class EmbeddingIndex:
                 p.brand,
                 p.source,
                 p.image_url AS product_image_url
-            FROM wine_product_images i
-            LEFT JOIN wine_products p ON p.id = i.product_id
+            FROM whisky_product_images i
+            LEFT JOIN whisky_products p ON p.id = i.product_id
             ORDER BY i.id ASC
         """
         if limit and limit > 0:
@@ -238,7 +238,7 @@ class EmbeddingIndex:
         return results
 
 
-app = FastAPI(title="Wine Embedding Service", version="1.0.0")
+app = FastAPI(title="Whisky Embedding Service", version="1.0.0")
 index = EmbeddingIndex()
 
 
