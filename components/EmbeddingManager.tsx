@@ -73,7 +73,7 @@ const MINIMIZED_STORAGE_KEY = 'embeddings.jobProgressMinimized';
 const FINAL_STATUSES = new Set<EmbeddingJobStatus['status']>(['completed', 'failed', 'cancelled']);
 
 export default function EmbeddingManager() {
-  const [activeTab, setActiveTab] = useState<ManagerTab>('embedding');
+  const [activeTab, setActiveTab] = useState<ManagerTab>('search');
 
   const [health, setHealth] = useState<EmbeddingHealth | null>(null);
   const [loadingHealth, setLoadingHealth] = useState(false);
@@ -159,6 +159,28 @@ export default function EmbeddingManager() {
     setSseConnected(false);
   };
 
+  const isJobNotFoundError = (err: unknown): boolean => {
+    if (!err || typeof err !== 'object') {
+      return false;
+    }
+    const candidate = err as { status?: number; notFound?: boolean; message?: string };
+    if (candidate.notFound || candidate.status === 404) {
+      return true;
+    }
+    return typeof candidate.message === 'string' && /job not found/i.test(candidate.message);
+  };
+
+  const clearTrackedJob = (message?: string) => {
+    stopTrackingJob();
+    localStorage.removeItem(ACTIVE_JOB_STORAGE_KEY);
+    setJob(null);
+    setJobModalOpen(false);
+    setJobModalMinimized(false);
+    if (message) {
+      setEmbedMessage(message);
+    }
+  };
+
   const applyJobPayload = async (payload: EmbeddingJobStatus) => {
     setJob(payload);
     setJobError('');
@@ -180,7 +202,11 @@ export default function EmbeddingManager() {
     const res = await fetch(`/api/embeddings/jobs/${jobId}`, { cache: 'no-store' });
     const data = await res.json();
     if (!res.ok || data.ok === false) {
-      throw new Error(data?.detail || data?.error || 'Failed to load job status');
+      const errorMessage = data?.detail || data?.error || 'Failed to load job status';
+      const error = new Error(errorMessage) as Error & { status?: number; notFound?: boolean };
+      error.status = res.status;
+      error.notFound = res.status === 404 || /job not found/i.test(String(errorMessage));
+      throw error;
     }
     await applyJobPayload(data as EmbeddingJobStatus);
   };
@@ -198,7 +224,11 @@ export default function EmbeddingManager() {
     try {
       await loadJobStatus(jobId);
     } catch (err) {
-      setJobError(String(err));
+      if (isJobNotFoundError(err)) {
+        clearTrackedJob('The previous job no longer exists on the server. Start a new embedding run.');
+        return;
+      }
+      setJobError(err instanceof Error ? err.message : String(err));
     }
 
     const stream = new EventSource(`/api/embeddings/jobs/${jobId}/stream`);
@@ -210,7 +240,18 @@ export default function EmbeddingManager() {
 
     stream.onmessage = (ev) => {
       try {
-        const payload = JSON.parse(ev.data) as EmbeddingJobStatus;
+        const raw = JSON.parse(ev.data) as { ok?: boolean; error?: string; job_id?: string; status?: string };
+
+        if (raw?.ok === false) {
+          clearTrackedJob(raw.error || 'Embedding stream closed by server.');
+          return;
+        }
+
+        if (!raw?.job_id || !raw?.status) {
+          return;
+        }
+
+        const payload = raw as unknown as EmbeddingJobStatus;
         void applyJobPayload(payload);
         if (FINAL_STATUSES.has(payload.status)) {
           stopTrackingJob();
@@ -226,7 +267,11 @@ export default function EmbeddingManager() {
 
     pollingRef.current = window.setInterval(() => {
       void loadJobStatus(jobId).catch((err) => {
-        setJobError(String(err));
+        if (isJobNotFoundError(err)) {
+          clearTrackedJob('Embedding job was removed or server restarted. Tracking stopped.');
+          return;
+        }
+        setJobError(err instanceof Error ? err.message : String(err));
       });
     }, 2500);
   };
@@ -390,17 +435,6 @@ export default function EmbeddingManager() {
       <div className="mb-5 inline-flex rounded-xl border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-800/50">
         <button
           type="button"
-          onClick={() => setActiveTab('embedding')}
-          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-            activeTab === 'embedding'
-              ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white'
-              : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white'
-          }`}
-        >
-          Embedding Jobs
-        </button>
-        <button
-          type="button"
           onClick={() => setActiveTab('search')}
           className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === 'search'
@@ -409,6 +443,17 @@ export default function EmbeddingManager() {
           }`}
         >
           Image Search
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('embedding')}
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'embedding'
+              ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white'
+              : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white'
+          }`}
+        >
+          Embedding Jobs
         </button>
       </div>
 
