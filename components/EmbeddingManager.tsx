@@ -58,7 +58,7 @@ export default function EmbeddingManager() {
   const [health, setHealth] = useState<EmbeddingHealth | null>(null);
   const [loadingHealth, setLoadingHealth] = useState(false);
   const [startingEmbed, setStartingEmbed] = useState(false);
-  const [embedLimit, setEmbedLimit] = useState(500);
+  const [embedLimit, setEmbedLimit] = useState(60000);
   const [job, setJob] = useState<EmbeddingJobStatus | null>(null);
   const [jobError, setJobError] = useState('');
   const [jobModalOpen, setJobModalOpen] = useState(false);
@@ -318,9 +318,9 @@ export default function EmbeddingManager() {
         <input
           type="number"
           min={1}
-          max={20000}
+          max={100000}
           value={embedLimit}
-          onChange={(e) => setEmbedLimit(Number(e.target.value || 500))}
+          onChange={(e) => setEmbedLimit(Number(e.target.value || 60000))}
           className="w-32 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
 

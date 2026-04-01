@@ -17,7 +17,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: FiHome },
-    { name: 'Admin', href: '/admin', icon: FiSettings },
+    { name: 'Search by Image', href: '/admin', icon: FiSettings },
     // { name: 'Image Search', href: '/search', icon: FiSearch },
   ];
 
