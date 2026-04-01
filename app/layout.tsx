@@ -48,10 +48,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${plusJakartaSans.variable} ${playfairDisplay.variable} font-sans antialiased text-zinc-900 dark:text-zinc-50 wp-body`}>
-        <div className="wp-shell flex h-screen">
+        <div className="wp-shell flex min-h-screen">
           <Sidebar />
 
-          <main className="flex-1 ml-72 flex flex-col h-screen overflow-hidden">
+          <main className="flex-1 ml-72 flex flex-col min-h-screen">
             {children}
           </main>
         </div>

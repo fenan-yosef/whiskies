@@ -622,32 +622,34 @@ export default function EmbeddingManager() {
               {queryPreview && (
                 <div className="rounded-lg border border-zinc-200 p-2 dark:border-zinc-700">
                   <p className="mb-2 text-xs font-medium text-zinc-500">Query</p>
-                  <div className="flex h-44 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                  <div className="flex h-64 md:h-72 lg:h-80 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
                     <img src={queryPreview} alt="query" className="max-h-full w-full object-contain" />
                   </div>
                 </div>
               )}
 
-              <div className="grid gap-3 lg:col-span-4 md:grid-cols-2 xl:grid-cols-3">
-                {results.map((item) => (
-                  <button
-                    key={item.image_id}
-                    type="button"
-                    onClick={() => setSelectedResult(item)}
-                    className="text-left rounded-lg border border-zinc-200 p-2 transition-colors hover:border-amber-400 dark:border-zinc-700 dark:hover:border-amber-500"
-                  >
-                    <div className="mb-2 flex h-40 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                      <img
-                        src={previewForResult(item)}
-                        alt={item.product_name}
-                        className="max-h-full w-full object-contain"
-                        loading="lazy"
-                      />
-                    </div>
-                    <p className="line-clamp-2 text-sm font-medium">{item.product_name || `Product ${item.product_id}`}</p>
-                    <p className="mt-1 text-xs text-zinc-500">Score: {item.score.toFixed(4)}</p>
-                  </button>
-                ))}
+              <div className="lg:col-span-4">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 max-h-[65vh] overflow-y-auto pr-2">
+                  {results.map((item) => (
+                    <button
+                      key={item.image_id}
+                      type="button"
+                      onClick={() => setSelectedResult(item)}
+                      className="text-left rounded-lg border border-zinc-200 p-2 transition-colors hover:border-amber-400 dark:border-zinc-700 dark:hover:border-amber-500"
+                    >
+                      <div className="mb-2 flex h-64 md:h-72 lg:h-80 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
+                        <img
+                          src={previewForResult(item)}
+                          alt={item.product_name}
+                          className="max-h-full w-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <p className="line-clamp-2 text-sm font-medium">{item.product_name || `Product ${item.product_id}`}</p>
+                      <p className="mt-1 text-xs text-zinc-500">Score: {item.score.toFixed(4)}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
