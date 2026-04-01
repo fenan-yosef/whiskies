@@ -69,6 +69,7 @@ interface SearchResult {
 
 const ACTIVE_JOB_STORAGE_KEY = 'embeddings.activeJobId';
 const MINIMIZED_STORAGE_KEY = 'embeddings.jobProgressMinimized';
+const SEARCH_RESULTS_PER_PAGE = 10;
 
 const FINAL_STATUSES = new Set<EmbeddingJobStatus['status']>(['completed', 'failed', 'cancelled']);
 
@@ -92,6 +93,7 @@ export default function EmbeddingManager() {
   const [topK, setTopK] = useState(8);
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [resultsPage, setResultsPage] = useState(1);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
 
   const [embedMessage, setEmbedMessage] = useState('');
@@ -104,6 +106,13 @@ export default function EmbeddingManager() {
     if (!queryImage) return '';
     return URL.createObjectURL(queryImage);
   }, [queryImage]);
+
+  const totalResultPages = Math.max(1, Math.ceil(results.length / SEARCH_RESULTS_PER_PAGE));
+
+  const pagedResults = useMemo(() => {
+    const start = (resultsPage - 1) * SEARCH_RESULTS_PER_PAGE;
+    return results.slice(start, start + SEARCH_RESULTS_PER_PAGE);
+  }, [results, resultsPage]);
 
   const activeProgress = Math.min(100, Math.max(0, Number(job?.progress || 0)));
   const isJobActive = Boolean(job && !FINAL_STATUSES.has(job.status));
@@ -133,6 +142,10 @@ export default function EmbeddingManager() {
       }
     };
   }, [queryPreview]);
+
+  useEffect(() => {
+    setResultsPage((current) => Math.min(current, totalResultPages));
+  }, [totalResultPages]);
 
   const loadHealth = async () => {
     setLoadingHealth(true);
@@ -345,6 +358,7 @@ export default function EmbeddingManager() {
 
     setSearching(true);
     setSearchMessage('');
+    setResultsPage(1);
     setResults([]);
 
     try {
@@ -584,7 +598,7 @@ export default function EmbeddingManager() {
                 <input
                   type="number"
                   min={1}
-                  max={20}
+                  max={60}
                   value={topK}
                   onChange={(e) => setTopK(Number(e.target.value || 8))}
                   className="w-24 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
@@ -628,9 +642,39 @@ export default function EmbeddingManager() {
                 </div>
               )}
 
-              <div className="lg:col-span-4">
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 max-h-[65vh] overflow-y-auto pr-2">
-                  {results.map((item) => (
+              <div className="lg:col-span-4 space-y-3">
+                {results.length > SEARCH_RESULTS_PER_PAGE && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-300">
+                    <p>
+                      Showing {(resultsPage - 1) * SEARCH_RESULTS_PER_PAGE + 1}-
+                      {Math.min(resultsPage * SEARCH_RESULTS_PER_PAGE, results.length)} of {results.length}
+                    </p>
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={resultsPage === 1}
+                        onClick={() => setResultsPage((p) => Math.max(1, p - 1))}
+                        className="rounded-md border border-zinc-200 px-2 py-1 text-xs hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-700"
+                      >
+                        Prev
+                      </button>
+                      <span>
+                        Page {resultsPage} / {totalResultPages}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={resultsPage === totalResultPages}
+                        onClick={() => setResultsPage((p) => Math.min(totalResultPages, p + 1))}
+                        className="rounded-md border border-zinc-200 px-2 py-1 text-xs hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-700"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {pagedResults.map((item) => (
                     <button
                       key={item.image_id}
                       type="button"
