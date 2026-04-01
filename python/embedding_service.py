@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Literal, Optional, Tuple
 
 import clip
 import mysql.connector
@@ -29,6 +29,9 @@ IMAGE_IDS_PATH = Path(os.getenv("IMAGE_IDS_PATH", str(DATA_DIR / "image_ids.npy"
 MODEL_NAME = os.getenv("EMBEDDING_MODEL", "ViT-B/32")
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 MAX_TOP_K = int(os.getenv("EMBEDDING_MAX_TOP_K", "50"))
+FINAL_JOB_STATUSES = {"completed", "failed", "cancelled"}
+ACTIVE_JOB_STATUSES = {"queued", "running", "paused"}
+JobControlAction = Literal["pause", "resume", "cancel"]
 
 
 def _load_dotenv(path: Path) -> None:
@@ -117,6 +120,8 @@ def _build_job(job_id: str, limit: Optional[int]) -> Dict[str, Any]:
         "failed": 0,
         "skipped": 0,
         "progress": 0.0,
+        "pause_requested": False,
+        "cancel_requested": False,
         "started_at": None,
         "finished_at": None,
         "created_at": now,
@@ -145,6 +150,45 @@ def _get_job(job_id: str) -> Optional[Dict[str, Any]]:
     with _jobs_lock:
         job = _jobs.get(job_id)
         return dict(job) if job else None
+
+
+def _apply_job_control(job_id: str, action: JobControlAction) -> Dict[str, Any]:
+    now = time.time()
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            raise KeyError(f"Unknown job_id {job_id}")
+
+        status = str(job.get("status", ""))
+        if status in FINAL_JOB_STATUSES:
+            return dict(job)
+
+        if action == "pause":
+            if status in {"queued", "running"}:
+                job["pause_requested"] = True
+                job["message"] = "Pause requested by user"
+                if status == "queued":
+                    job["status"] = "paused"
+        elif action == "resume":
+            job["pause_requested"] = False
+            if status == "paused":
+                job["status"] = "running"
+            job["message"] = "Resume requested by user"
+        elif action == "cancel":
+            job["cancel_requested"] = True
+            if status in {"queued", "paused"}:
+                job["status"] = "cancelled"
+                job["message"] = "Stopped by user"
+                job["finished_at"] = now
+            else:
+                job["message"] = "Stop requested by user"
+        else:
+            raise ValueError(f"Unsupported action: {action}")
+
+        job["updated_at"] = now
+        job["version"] = int(job.get("version", 0)) + 1
+        _jobs[job_id] = job
+        return dict(job)
 
 
 def _count_rows(limit: Optional[int]) -> int:
@@ -234,9 +278,80 @@ def _load_index_from_disk() -> int:
     return int(image_ids.shape[0])
 
 
+def _checkpoint_job_control(
+    job_id: str,
+    *,
+    processed: int,
+    embedded: int,
+    failed: int,
+    skipped: int,
+    total: int,
+) -> bool:
+    display_total = total if total > 0 else 0
+
+    while True:
+        job = _get_job(job_id)
+        if not job:
+            return False
+
+        cancel_requested = bool(job.get("cancel_requested"))
+        pause_requested = bool(job.get("pause_requested"))
+        status = str(job.get("status", ""))
+
+        if cancel_requested:
+            progress = round((processed / total) * 100.0, 2) if total > 0 else 0.0
+            _update_job(
+                job_id,
+                status="cancelled",
+                processed=processed,
+                embedded=embedded,
+                failed=failed,
+                skipped=skipped,
+                progress=progress,
+                message=f"Stopped by user at {processed}/{display_total}",
+                finished_at=time.time(),
+            )
+            return False
+
+        if pause_requested:
+            if status != "paused":
+                progress = round((processed / total) * 100.0, 2) if total > 0 else 0.0
+                _update_job(
+                    job_id,
+                    status="paused",
+                    processed=processed,
+                    embedded=embedded,
+                    failed=failed,
+                    skipped=skipped,
+                    progress=progress,
+                    message=f"Paused at {processed}/{display_total}",
+                )
+            time.sleep(0.4)
+            continue
+
+        if status == "paused":
+            _update_job(
+                job_id,
+                status="running",
+                message=f"Resumed at {processed}/{display_total}",
+            )
+        return True
+
+
 def _run_reindex_job(job_id: str, limit: Optional[int]) -> None:
     try:
         _update_job(job_id, status="running", message="Loading image rows", started_at=time.time())
+
+        if not _checkpoint_job_control(
+            job_id,
+            processed=0,
+            embedded=0,
+            failed=0,
+            skipped=0,
+            total=0,
+        ):
+            return
+
         total = _count_rows(limit)
         _update_job(job_id, total=total, message="Embedding images")
 
@@ -258,6 +373,16 @@ def _run_reindex_job(job_id: str, limit: Optional[int]) -> None:
         skipped = 0
 
         for row in _iter_image_rows(limit):
+            if not _checkpoint_job_control(
+                job_id,
+                processed=processed,
+                embedded=embedded,
+                failed=failed,
+                skipped=skipped,
+                total=total,
+            ):
+                return
+
             processed += 1
             image_id = int(row["image_id"])
             image = _open_image_from_db_row(row)
@@ -412,7 +537,7 @@ def health() -> Dict[str, Any]:
     running_jobs = 0
     with _jobs_lock:
         for job in _jobs.values():
-            if job.get("status") in {"queued", "running"}:
+            if job.get("status") in ACTIVE_JOB_STATUSES:
                 running_jobs += 1
 
     return {
@@ -446,6 +571,33 @@ def get_job(job_id: str) -> Dict[str, Any]:
     return {"ok": True, **job}
 
 
+@app.post("/jobs/{job_id}/pause")
+def pause_job(job_id: str) -> Dict[str, Any]:
+    try:
+        job = _apply_job_control(job_id, "pause")
+        return {"ok": True, **job}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+
+@app.post("/jobs/{job_id}/resume")
+def resume_job(job_id: str) -> Dict[str, Any]:
+    try:
+        job = _apply_job_control(job_id, "resume")
+        return {"ok": True, **job}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+
+@app.post("/jobs/{job_id}/cancel")
+def cancel_job(job_id: str) -> Dict[str, Any]:
+    try:
+        job = _apply_job_control(job_id, "cancel")
+        return {"ok": True, **job}
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+
 @app.get("/jobs/stream/{job_id}")
 async def stream_job(job_id: str):
     async def event_generator():
@@ -462,7 +614,7 @@ async def stream_job(job_id: str):
                 yield f"data: {json.dumps({'ok': True, **job})}\n\n"
                 last_version = version
 
-            if job.get("status") in {"completed", "failed", "cancelled"}:
+            if job.get("status") in FINAL_JOB_STATUSES:
                 break
             await asyncio.sleep(1)
 
