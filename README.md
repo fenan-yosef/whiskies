@@ -237,7 +237,7 @@ Run it:
 python -m venv .venv
 . .venv/Scripts/Activate.ps1
 pip install -r python/requirements.txt
-uvicorn python.embedding_service:app --host 0.0.0.0 --port 8001
+uvicorn python.embedding_service:app --host 0.0.0.0 --port 8001 --loop asyncio --http h11
 ```
 
 Then run the app and use `/admin` → **Vector Embedding Manager** to rebuild index and search with an uploaded image.

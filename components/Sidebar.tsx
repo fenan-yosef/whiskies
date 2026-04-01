@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  FiHome
+  FiHome,
+  FiSearch,
+  FiSettings,
 } from 'react-icons/fi';
 import { 
   ChevronRight,
@@ -15,6 +17,8 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: FiHome },
+    { name: 'Admin', href: '/admin', icon: FiSettings },
+    // { name: 'Image Search', href: '/search', icon: FiSearch },
   ];
 
   return (
