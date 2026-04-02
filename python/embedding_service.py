@@ -2,6 +2,7 @@ import asyncio
 import io
 import json
 import os
+import shutil
 import threading
 import time
 import uuid
@@ -11,6 +12,7 @@ from typing import Any, Dict, Generator, List, Literal, Optional, Tuple
 import clip
 import mysql.connector
 import numpy as np
+import psutil
 import requests
 import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -31,6 +33,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 MAX_TOP_K = int(os.getenv("EMBEDDING_MAX_TOP_K", "50"))
 FINAL_JOB_STATUSES = {"completed", "failed", "cancelled"}
 ACTIVE_JOB_STATUSES = {"queued", "running", "paused"}
+TASK_MANAGER_MAX_PROCESSES = int(os.getenv("TASK_MANAGER_MAX_PROCESSES", "200"))
 JobControlAction = Literal["pause", "resume", "cancel"]
 
 
@@ -81,6 +84,10 @@ _jobs_lock = threading.Lock()
 
 class ReindexRequest(BaseModel):
     limit: Optional[int] = None
+
+
+class ProcessTerminateRequest(BaseModel):
+    force: bool = False
 
 
 def get_db_connection():
@@ -518,6 +525,141 @@ def _get_mime(blob: bytes) -> str:
     return "application/octet-stream"
 
 
+def _safe_cmdline(parts: Optional[List[str]]) -> str:
+    if not parts:
+        return ""
+    text = " ".join(parts)
+    if len(text) > 240:
+        return text[:240] + "..."
+    return text
+
+
+def _sample_processes(limit: int) -> List[Dict[str, Any]]:
+    capped_limit = max(1, min(limit, TASK_MANAGER_MAX_PROCESSES))
+
+    # Warm up CPU counters so the second read has meaningful values.
+    for proc in psutil.process_iter():
+        try:
+            proc.cpu_percent(interval=None)
+        except Exception:
+            continue
+    time.sleep(0.08)
+
+    protected = {1, os.getpid(), os.getppid()}
+    items: List[Dict[str, Any]] = []
+
+    for proc in psutil.process_iter(
+        attrs=["pid", "name", "username", "status", "memory_info", "memory_percent", "cmdline", "create_time"]
+    ):
+        try:
+            info = proc.info
+            pid = int(info.get("pid") or 0)
+            mem_info = info.get("memory_info")
+            rss = int(getattr(mem_info, "rss", 0) or 0)
+            items.append(
+                {
+                    "pid": pid,
+                    "name": info.get("name") or "unknown",
+                    "username": info.get("username") or "unknown",
+                    "status": info.get("status") or "unknown",
+                    "cpu_percent": round(float(proc.cpu_percent(interval=None)), 2),
+                    "memory_percent": round(float(info.get("memory_percent") or 0.0), 2),
+                    "memory_rss": rss,
+                    "cmdline": _safe_cmdline(info.get("cmdline")),
+                    "started_at": float(info.get("create_time") or 0.0),
+                    "protected": pid in protected,
+                }
+            )
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+
+    items.sort(key=lambda row: (float(row.get("memory_percent", 0.0)), float(row.get("cpu_percent", 0.0))), reverse=True)
+    return items[:capped_limit]
+
+
+def _system_status(limit: int = 80) -> Dict[str, Any]:
+    vm = psutil.virtual_memory()
+    disk = shutil.disk_usage("/")
+    load_avg = os.getloadavg() if hasattr(os, "getloadavg") else (0.0, 0.0, 0.0)
+
+    processes = _sample_processes(limit)
+    protected_pids = [1, os.getpid(), os.getppid()]
+
+    return {
+        "ok": True,
+        "captured_at": time.time(),
+        "host": {
+            "cpu_percent": round(float(psutil.cpu_percent(interval=0.1)), 2),
+            "cpu_count": int(psutil.cpu_count() or 0),
+            "load_avg": [round(float(load_avg[0]), 2), round(float(load_avg[1]), 2), round(float(load_avg[2]), 2)],
+            "memory": {
+                "total": int(vm.total),
+                "used": int(vm.used),
+                "available": int(vm.available),
+                "percent": round(float(vm.percent), 2),
+            },
+            "disk": {
+                "path": "/",
+                "total": int(disk.total),
+                "used": int(disk.used),
+                "free": int(disk.free),
+                "percent": round((float(disk.used) / float(disk.total)) * 100.0, 2) if disk.total else 0.0,
+            },
+            "uptime_seconds": int(max(0, time.time() - psutil.boot_time())),
+        },
+        "processes": processes,
+        "process_count": len(processes),
+        "can_terminate": True,
+        "protected_pids": protected_pids,
+    }
+
+
+def _terminate_pid(pid: int, force: bool) -> Dict[str, Any]:
+    protected = {1, os.getpid(), os.getppid()}
+    if pid in protected:
+        raise HTTPException(status_code=400, detail="Refusing to terminate protected process")
+
+    try:
+        proc = psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        raise HTTPException(status_code=404, detail="Process not found")
+
+    if hasattr(os, "getuid"):
+        try:
+            if proc.uids().real != os.getuid():
+                raise HTTPException(status_code=403, detail="Cannot terminate process owned by another user")
+        except psutil.AccessDenied:
+            raise HTTPException(status_code=403, detail="Access denied for this process")
+
+    name = proc.name()
+    if force:
+        proc.kill()
+        action = "kill"
+    else:
+        proc.terminate()
+        action = "terminate"
+
+    try:
+        proc.wait(timeout=5)
+        status = "terminated"
+    except psutil.TimeoutExpired:
+        if force:
+            status = "still_running"
+        else:
+            proc.kill()
+            proc.wait(timeout=5)
+            status = "terminated"
+            action = "terminate_then_kill"
+
+    return {
+        "ok": True,
+        "pid": pid,
+        "name": name,
+        "action": action,
+        "status": status,
+    }
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     try:
@@ -700,3 +842,13 @@ async def search(image: UploadFile = File(...), top_k: int = Form(8)):
         "top_k": max(1, min(int(top_k), MAX_TOP_K)),
         "results": results,
     }
+
+
+@app.get("/system/status")
+def system_status(limit: int = 80) -> Dict[str, Any]:
+    return _system_status(limit)
+
+
+@app.post("/system/processes/{pid}/terminate")
+def terminate_process(pid: int, req: ProcessTerminateRequest) -> Dict[str, Any]:
+    return _terminate_pid(pid, bool(req.force))

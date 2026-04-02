@@ -2,11 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  FiAlertTriangle,
   FiChevronUp,
   FiCpu,
   FiExternalLink,
+  FiHardDrive,
   FiMaximize2,
+  FiMonitor,
   FiMinimize2,
+  FiPower,
   FiPause,
   FiPlay,
   FiRefreshCw,
@@ -16,8 +20,49 @@ import {
   FiX,
 } from 'react-icons/fi';
 
-type ManagerTab = 'embedding' | 'search';
+type ManagerTab = 'embedding' | 'search' | 'tasks';
 type JobControlAction = 'pause' | 'resume' | 'cancel';
+
+interface SystemProcess {
+  pid: number;
+  name: string;
+  username: string;
+  status: string;
+  cpu_percent: number;
+  memory_percent: number;
+  memory_rss: number;
+  cmdline: string;
+  started_at: number;
+  protected: boolean;
+}
+
+interface SystemStatus {
+  ok: boolean;
+  captured_at: number;
+  host: {
+    cpu_percent: number;
+    cpu_count: number;
+    load_avg: number[];
+    memory: {
+      total: number;
+      used: number;
+      available: number;
+      percent: number;
+    };
+    disk: {
+      path: string;
+      total: number;
+      used: number;
+      free: number;
+      percent: number;
+    };
+    uptime_seconds: number;
+  };
+  processes: SystemProcess[];
+  process_count: number;
+  can_terminate: boolean;
+  protected_pids: number[];
+}
 
 interface EmbeddingHealth {
   ok: boolean;
@@ -96,6 +141,11 @@ export default function EmbeddingManager() {
   const [resultsPage, setResultsPage] = useState(1);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
 
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [loadingSystem, setLoadingSystem] = useState(false);
+  const [systemMessage, setSystemMessage] = useState('');
+  const [killingPid, setKillingPid] = useState<number | null>(null);
+
   const [embedMessage, setEmbedMessage] = useState('');
   const [searchMessage, setSearchMessage] = useState('');
 
@@ -120,6 +170,24 @@ export default function EmbeddingManager() {
   const canResume = Boolean(job && job.status === 'paused');
   const canStop = Boolean(job && !FINAL_STATUSES.has(job.status));
 
+  const formatBytes = (bytes: number): string => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const idx = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+    const value = bytes / Math.pow(1024, idx);
+    return `${value.toFixed(value >= 100 || idx === 0 ? 0 : 1)} ${units[idx]}`;
+  };
+
+  const formatUptime = (seconds: number): string => {
+    if (!Number.isFinite(seconds) || seconds <= 0) return '0m';
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
   useEffect(() => {
     void loadHealth();
     const minimized = localStorage.getItem(MINIMIZED_STORAGE_KEY) === '1';
@@ -134,6 +202,21 @@ export default function EmbeddingManager() {
       stopTrackingJob();
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'tasks') {
+      return;
+    }
+
+    void loadSystemStatus();
+    const interval = window.setInterval(() => {
+      void loadSystemStatus();
+    }, 7000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     return () => {
@@ -157,6 +240,49 @@ export default function EmbeddingManager() {
       setHealth({ ok: false, error: String(err) });
     } finally {
       setLoadingHealth(false);
+    }
+  };
+
+  const loadSystemStatus = async () => {
+    setLoadingSystem(true);
+    try {
+      const res = await fetch('/api/embeddings/system?limit=120', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok || data.ok === false) {
+        setSystemMessage(data?.detail || data?.error || 'Failed to load system status');
+        return;
+      }
+      setSystemStatus(data as SystemStatus);
+      setSystemMessage('');
+    } catch (err) {
+      setSystemMessage(String(err));
+    } finally {
+      setLoadingSystem(false);
+    }
+  };
+
+  const handleTerminateProcess = async (pid: number, force: boolean) => {
+    setKillingPid(pid);
+    setSystemMessage('');
+
+    try {
+      const res = await fetch(`/api/embeddings/system/processes/${pid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.ok === false) {
+        setSystemMessage(data?.detail || data?.error || `Failed to stop PID ${pid}`);
+      } else {
+        setSystemMessage(`PID ${pid} ${data?.status || 'updated'} via ${data?.action || (force ? 'kill' : 'terminate')}`);
+        await loadSystemStatus();
+      }
+    } catch (err) {
+      setSystemMessage(`Terminate failed: ${String(err)}`);
+    } finally {
+      setKillingPid(null);
     }
   };
 
@@ -469,6 +595,17 @@ export default function EmbeddingManager() {
         >
           Embedding Jobs
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('tasks')}
+          className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'tasks'
+              ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-white'
+              : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-white'
+          }`}
+        >
+          Task Manager
+        </button>
       </div>
 
       {activeTab === 'embedding' && (
@@ -697,6 +834,130 @@ export default function EmbeddingManager() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'tasks' && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+                Live server processes and resource usage (CPU, memory, disk)
+              </p>
+              <button
+                type="button"
+                onClick={() => void loadSystemStatus()}
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              >
+                <FiRefreshCw className={loadingSystem ? 'animate-spin' : ''} /> Refresh tasks
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/60">
+                <p className="text-xs text-zinc-500">CPU</p>
+                <p className="inline-flex items-center gap-2 text-xl font-semibold">
+                  <FiCpu /> {systemStatus?.host.cpu_percent?.toFixed(1) ?? '0.0'}%
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">{systemStatus?.host.cpu_count ?? 0} cores</p>
+              </div>
+              <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/60">
+                <p className="text-xs text-zinc-500">Memory</p>
+                <p className="text-xl font-semibold">{systemStatus?.host.memory.percent?.toFixed(1) ?? '0.0'}%</p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {formatBytes(systemStatus?.host.memory.used ?? 0)} / {formatBytes(systemStatus?.host.memory.total ?? 0)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/60">
+                <p className="text-xs text-zinc-500">Disk ({systemStatus?.host.disk.path || '/'})</p>
+                <p className="inline-flex items-center gap-2 text-xl font-semibold">
+                  <FiHardDrive /> {systemStatus?.host.disk.percent?.toFixed(1) ?? '0.0'}%
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {formatBytes(systemStatus?.host.disk.used ?? 0)} / {formatBytes(systemStatus?.host.disk.total ?? 0)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-zinc-50 p-3 dark:bg-zinc-800/60">
+                <p className="text-xs text-zinc-500">Uptime</p>
+                <p className="inline-flex items-center gap-2 text-xl font-semibold">
+                  <FiMonitor /> {formatUptime(systemStatus?.host.uptime_seconds ?? 0)}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">Processes shown: {systemStatus?.process_count ?? 0}</p>
+              </div>
+            </div>
+          </div>
+
+          {systemMessage && (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-300">
+              {systemMessage}
+            </div>
+          )}
+
+          <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-800/60">
+                <tr>
+                  <th className="px-3 py-2">PID</th>
+                  <th className="px-3 py-2">Process</th>
+                  <th className="px-3 py-2">Owner</th>
+                  <th className="px-3 py-2">CPU %</th>
+                  <th className="px-3 py-2">Mem %</th>
+                  <th className="px-3 py-2">RSS</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(systemStatus?.processes || []).map((proc) => (
+                  <tr key={proc.pid} className="border-t border-zinc-200 dark:border-zinc-800">
+                    <td className="px-3 py-2 font-mono text-xs">{proc.pid}</td>
+                    <td className="px-3 py-2">
+                      <p className="font-medium text-zinc-900 dark:text-white">{proc.name}</p>
+                      <p className="max-w-[360px] truncate text-xs text-zinc-500">{proc.cmdline || '-'}</p>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-zinc-600 dark:text-zinc-300">{proc.username}</td>
+                    <td className="px-3 py-2">{proc.cpu_percent.toFixed(1)}</td>
+                    <td className="px-3 py-2">{proc.memory_percent.toFixed(2)}</td>
+                    <td className="px-3 py-2">{formatBytes(proc.memory_rss)}</td>
+                    <td className="px-3 py-2 text-xs">{proc.status}</td>
+                    <td className="px-3 py-2">
+                      {proc.protected ? (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 dark:border-zinc-700">
+                          <FiAlertTriangle /> Protected
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleTerminateProcess(proc.pid, false)}
+                            disabled={killingPid === proc.pid}
+                            className="inline-flex items-center gap-1 rounded-md border border-zinc-200 px-2 py-1 text-xs hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                          >
+                            <FiPower /> {killingPid === proc.pid ? 'Stopping...' : 'End task'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleTerminateProcess(proc.pid, true)}
+                            disabled={killingPid === proc.pid}
+                            className="inline-flex items-center gap-1 rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/20"
+                          >
+                            <FiSquare /> Force kill
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {(!systemStatus || systemStatus.processes.length === 0) && (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-8 text-center text-sm text-zinc-500">
+                      {loadingSystem ? 'Loading processes...' : 'No process data available yet.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

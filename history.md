@@ -56,3 +56,41 @@
 ## Current State
 - Python embedding service is installed, running, and enabled on boot.
 - Next.js embedding API proxy is functioning end-to-end in production.
+
+## Update - Task Manager Tab (2026-04-02)
+
+### Goal
+- Added a clean Task Manager tab next to Search and Embedding tabs so users can inspect server workload and end unwanted tasks.
+
+### Backend (Python)
+- File updated: `python/embedding_service.py`
+- New dependency: `psutil>=5.9.0` in `python/requirements.txt`
+- Added endpoints:
+	- `GET /system/status?limit=120`
+		- Returns CPU, memory, disk, uptime, process list, and protected PID list.
+	- `POST /system/processes/{pid}/terminate`
+		- Terminates or kills a process (`{"force": true|false}`), with guardrails for protected processes.
+- Safety/robustness notes:
+	- Refuses to terminate protected PIDs (`1`, current service process, parent process).
+	- Filters inaccessible processes gracefully.
+	- Limits process list size (`TASK_MANAGER_MAX_PROCESSES`, default 200).
+
+### Next.js Proxy Layer
+- Added routes:
+	- `app/api/embeddings/system/route.ts` -> proxies to Python `/system/status`
+	- `app/api/embeddings/system/processes/[pid]/route.ts` -> proxies to Python terminate endpoint
+
+### Frontend (Embedding Manager)
+- File updated: `components/EmbeddingManager.tsx`
+- Added new tab: `Task Manager`
+- UI includes:
+	- Resource cards for CPU, memory, disk, uptime
+	- Process table with PID/name/owner/cpu/memory/status/cmdline
+	- Actions:
+		- `End task` (graceful terminate)
+		- `Force kill`
+	- Protected processes are marked and action-disabled
+	- Auto-refresh while tab is open (7s interval) + manual refresh
+
+### Deployment Note
+- For production, run `pip install -r python/requirements.txt` on VPS and restart `whiskies-embedding.service` to apply `psutil` and new endpoints.
