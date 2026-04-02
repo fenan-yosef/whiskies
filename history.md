@@ -111,3 +111,30 @@
 
 ### Result
 - CI/CD now handles backend Python service updates on push, not just Next.js.
+
+## Incident Note - Task Manager 404 After Deploy (2026-04-02)
+
+### Symptom
+- `GET /api/embeddings/system?limit=120` returned `404 {"detail":"Not Found"}` in production.
+
+### Root Cause
+- Next.js route existed and was built correctly in `/opt/whiskies`.
+- The Python embedding service was still running from `/root/whiskies` (older code path) and did not include `/system/status`.
+- Result: Next proxy route worked, but upstream Python endpoint returned 404.
+
+### Fix Applied
+- Synced latest Python files to `/opt/whiskies/python`.
+- Updated `whiskies-embedding.service` to run from `/opt/whiskies`:
+	- `WorkingDirectory=/opt/whiskies`
+	- `ExecStart=/opt/whiskies/.venv/bin/uvicorn ... --app-dir /opt/whiskies/python`
+	- `EnvironmentFile=-/opt/whiskies/.env`
+- Installed Python deps in `/opt/whiskies/.venv` and restarted service.
+- Restarted PM2 app `whiskies`.
+
+### Verification
+- `GET http://127.0.0.1:8001/system/status?limit=5` -> 200 OK.
+- `GET http://127.0.0.1:3002/api/embeddings/system?limit=5` -> 200 OK.
+- `GET http://161.97.125.177:3002/api/embeddings/system?limit=5` -> 200 OK.
+
+### Prevention
+- CI workflow now includes a post-deploy smoke check for `/api/embeddings/system` and fails deploy if not 200.

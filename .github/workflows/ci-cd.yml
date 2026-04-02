@@ -64,3 +64,21 @@ jobs:
             echo "systemctl unavailable on target host; skipped service restart."
           fi
           EOF
+
+      - name: Verify embeddings system endpoint
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "APP_PORT='${{ secrets.APP_PORT }}' bash -s" << 'EOF'
+          set -euo pipefail
+
+          APP_PORT="${APP_PORT:-3002}"
+          STATUS_CODE=$(curl -sS -o /tmp/embeddings_system_check.json -w "%{http_code}" "http://127.0.0.1:${APP_PORT}/api/embeddings/system?limit=1")
+
+          if [ "$STATUS_CODE" != "200" ]; then
+            echo "Embeddings system endpoint check failed with HTTP ${STATUS_CODE}"
+            cat /tmp/embeddings_system_check.json || true
+            exit 1
+          fi
+
+          echo "Embeddings system endpoint is healthy"
+          cat /tmp/embeddings_system_check.json
+          EOF
