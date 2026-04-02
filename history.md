@@ -94,3 +94,20 @@
 
 ### Deployment Note
 - For production, run `pip install -r python/requirements.txt` on VPS and restart `whiskies-embedding.service` to apply `psutil` and new endpoints.
+
+## Update - CI/CD Python Deployment (2026-04-02)
+
+### Goal
+- Extend GitHub Actions deployment so pushes to `master` update both Next.js and Python embedding service.
+
+### Workflow Change
+- File updated: `.github/workflows/ci-cd.yml`
+- Added deploy step: `Deploy Python embedding service`
+	- SSH into VPS after existing remote Next.js deploy
+	- Ensure `.venv` exists (`python3 -m venv .venv` if missing)
+	- Install/update Python deps from `python/requirements.txt`
+	- Restart `whiskies-embedding.service` if present
+	- Print service status for deploy visibility
+
+### Result
+- CI/CD now handles backend Python service updates on push, not just Next.js.

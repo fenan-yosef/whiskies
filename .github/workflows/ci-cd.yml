@@ -34,3 +34,33 @@ jobs:
       - name: Run remote deploy script
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "REMOTE_DIR='${{ secrets.REMOTE_DIR }}' APP_PORT='${{ secrets.APP_PORT }}' POST_DEPLOY_COMMANDS='${{ secrets.POST_DEPLOY_COMMANDS }}' bash -s" < ./scripts/deploy.sh
+
+      - name: Deploy Python embedding service
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "REMOTE_DIR='${{ secrets.REMOTE_DIR }}' bash -s" << 'EOF'
+          set -euo pipefail
+
+          REMOTE_DIR="${REMOTE_DIR:-/opt/whiskies}"
+          SERVICE_NAME="whiskies-embedding.service"
+
+          cd "$REMOTE_DIR"
+
+          if [ ! -d .venv ]; then
+            python3 -m venv .venv
+          fi
+
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -r python/requirements.txt
+
+          if command -v systemctl >/dev/null 2>&1; then
+            if systemctl list-unit-files | grep -q "^${SERVICE_NAME}"; then
+              (systemctl restart "$SERVICE_NAME" || sudo systemctl restart "$SERVICE_NAME")
+              (systemctl --no-pager --full status "$SERVICE_NAME" || sudo systemctl --no-pager --full status "$SERVICE_NAME")
+            else
+              echo "${SERVICE_NAME} not found. Skipping restart (create it once on server)."
+            fi
+          else
+            echo "systemctl unavailable on target host; skipped service restart."
+          fi
+          EOF
