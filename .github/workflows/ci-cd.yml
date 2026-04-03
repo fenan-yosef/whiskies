@@ -63,6 +63,24 @@ jobs:
           else
             echo "systemctl unavailable on target host; skipped service restart."
           fi
+          # Wait for the embedding service to become healthy (avoid race with smoke-test)
+          MAX_WAIT=${MAX_WAIT:-60}
+          SLEEP=${SLEEP:-2}
+          echo "Waiting up to ${MAX_WAIT}s for embedding service health endpoint..."
+          elapsed=0
+          while [ "$elapsed" -lt "$MAX_WAIT" ]; do
+            if curl -sS --fail http://127.0.0.1:8001/health >/dev/null 2>&1; then
+              echo "Embedding service responded to /health"
+              break
+            fi
+            sleep "$SLEEP"
+            elapsed=$((elapsed + SLEEP))
+          done
+          if [ "$elapsed" -ge "$MAX_WAIT" ]; then
+            echo "Embedding service did not become healthy within ${MAX_WAIT}s"
+            (systemctl --no-pager --full status "$SERVICE_NAME" || sudo systemctl --no-pager --full status "$SERVICE_NAME") || true
+            exit 1
+          fi
           EOF
 
       - name: Verify embeddings system endpoint
