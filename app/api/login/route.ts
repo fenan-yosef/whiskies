@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     // 2. Set the cookie
     (await cookies()).set("session", sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Set to false for HTTP in production
       expires: expiresAt,
       sameSite: "lax",
       path: "/",
