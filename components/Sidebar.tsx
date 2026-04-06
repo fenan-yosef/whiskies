@@ -6,14 +6,35 @@ import {
   FiHome,
   FiSearch,
   FiSettings,
+  FiLogOut,
 } from 'react-icons/fi';
 import { 
   ChevronRight,
   ShieldCheck,
+  Loader2,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const response = await fetch('/api/logout', { method: 'POST' });
+      if (response.ok) {
+        router.push('/login');
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: FiHome },
@@ -74,21 +95,22 @@ export default function Sidebar() {
         </div> */}
       </div>
 
-      <div className="border-t border-white/10 p-4">
-        {/* <div className="mb-4 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#2271b1] to-[#135e96] text-xs font-bold text-white">
-            AD
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white">Admin User</p>
-            <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-400">Publisher</p>
-          </div>
-        </div> */}
-
-        {/* <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-200 transition-colors hover:bg-red-500/20">
-          <FiLogOut className="h-4 w-4" />
-          <span>Exit Session</span>
-        </button> */}
+      <div className="border-t border-white/10 p-5">
+        <button 
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-all hover:bg-red-500/10 hover:text-red-200 text-zinc-400 disabled:opacity-50"
+        >
+          <span className="flex items-center gap-3">
+            {isLoggingOut ? (
+              <Loader2 className="h-[18px] w-[18px] animate-spin text-red-400" />
+            ) : (
+              <FiLogOut className="h-[18px] w-[18px] group-hover:text-red-400 transition-colors" />
+            )}
+            <span>{isLoggingOut ? 'Ending...' : 'Sign Out'}</span>
+          </span>
+          {!isLoggingOut && <ChevronRight className="h-4 w-4 text-zinc-600 transition-transform group-hover:translate-x-1 group-hover:text-red-400" />}
+        </button>
       </div>
     </aside>
   );
