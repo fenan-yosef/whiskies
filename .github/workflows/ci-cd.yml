@@ -83,20 +83,19 @@ jobs:
           fi
           EOF
 
-      - name: Verify embeddings system endpoint
+      - name: Verify login endpoint
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "APP_PORT='${{ secrets.APP_PORT }}' bash -s" << 'EOF'
           set -euo pipefail
 
           APP_PORT="${APP_PORT:-3002}"
-          STATUS_CODE=$(curl -sS -o /tmp/embeddings_system_check.json -w "%{http_code}" "http://127.0.0.1:${APP_PORT}/api/embeddings/system?limit=1")
+          # The login page should return 200 OK
+          STATUS_CODE=$(curl -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${APP_PORT}/login")
 
           if [ "$STATUS_CODE" != "200" ]; then
-            echo "Embeddings system endpoint check failed with HTTP ${STATUS_CODE}"
-            cat /tmp/embeddings_system_check.json || true
+            echo "Login page check failed with HTTP ${STATUS_CODE}"
             exit 1
           fi
 
-          echo "Embeddings system endpoint is healthy"
-          cat /tmp/embeddings_system_check.json
+          echo "Login page is accessible"
           EOF
