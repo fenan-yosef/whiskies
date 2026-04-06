@@ -1,3 +1,14 @@
+## Security Maintenance - 2026-04-06
+
+### Action
+- Rotated root password for server `161.97.125.177` via SSH as `root`.
+- Rotated MySQL password for `whisky_service` user with a new strong password (meeting policy requirements: mixed case, numbers, special chars).
+- Verified both changes applied successfully.
+
+### Notes
+- New credentials were not committed to version control and are stored securely.
+- All relevant configuration files and secrets should be updated to use the new credentials.
+- No service downtime observed during rotation.
 # Deployment Log - 2026-04-01
 
 ## Context
