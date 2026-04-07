@@ -6,6 +6,10 @@ const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD ?? '';
 const DB_NAME = process.env.DB_NAME || 'whisky_db';
 
+// Log runtime DB environment (mask password) for debugging production issues.
+const dbPasswordLength = DB_PASSWORD ? DB_PASSWORD.length : 0;
+console.log(`[db] init: host=${DB_HOST} user=${DB_USER} db=${DB_NAME} pwd_len=${dbPasswordLength} NODE_ENV=${process.env.NODE_ENV}`);
+
 if (process.env.NODE_ENV === 'production' && !process.env.DB_PASSWORD) {
   console.warn('[db] DB_PASSWORD is empty in production. Set it via server env.');
 }
