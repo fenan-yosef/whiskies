@@ -16,6 +16,12 @@ cd "$REMOTE_DIR"
 git fetch --all --tags
 git reset --hard origin/master
 
+# Remove stale Next.js build lock (prevents "Unable to acquire lock" errors during build)
+if [ -d ".next" ] && [ -f ".next/lock" ]; then
+  echo "Removing stale Next.js lock file (.next/lock)"
+  rm -f .next/lock
+fi
+
 if command -v pnpm >/dev/null 2>&1; then
   pnpm install --frozen-lockfile
   pnpm build

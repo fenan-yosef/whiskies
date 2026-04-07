@@ -14,6 +14,8 @@ jobs:
           version: 8
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+      - name: Remove existing .next
+        run: rm -rf .next
       - name: Build
         run: pnpm build
       - name: Upload build artifact
