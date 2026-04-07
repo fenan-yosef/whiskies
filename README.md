@@ -1,4 +1,4 @@
-# Whisky Inventory Management Application
+# Whisky Inventory Management Application Readme
 
 A professional full-stack whisky inventory management application built with Next.js 16, React 19, and MySQL. Features a clean admin interface with search, filtering, pagination, and complete CRUD operations.
 
